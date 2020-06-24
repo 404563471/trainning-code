@@ -1,0 +1,82 @@
+---
+title: "ML-svm&randomforest"
+author: "mason-YHY"
+date: "2020/4/4"
+output: html_document
+---
+
+### 鸢尾花数据---分类问题
+1. 准备数据
+
+```{r}
+library(caret)
+# attach the iris dataset to the environment
+data(iris)
+# rename the dataset
+dataset <- iris
+# create a list of 80% of the rows in the original dataset we can use for training
+train_index <- createDataPartition(dataset$Species, p=0.80, list=FALSE)
+# select 20% of the data for validation
+validation <- dataset[-train_index,]
+# use the remaining 80% of data to training and testing the models
+trainData <- dataset[train_index,]
+summary(trainData)
+```
+
+1.2 数据标准化处理
+```{r}
+preProcValues <- preProcess(trainData, method = c("center", "scale"))
+trainData <- predict(preProcValues, trainData)
+summary(trainData)
+
+# 利用训练集的均值和方差对验证集进行标准化
+validData <- predict(preProcValues, validation)
+summary(validData)
+```
+
+2. 评估算法
+2.1 挑选集中算法进行建模
+```{r}
+# 10折交叉验证(10-fold cross validation)，将数据集分成十份，轮流将其中9份做训练1份做验证，10次的结果的均值作为对算法精度的估计
+control <- trainControl(method="cv", number=10)
+metric <- "Accuracy"
+
+#linear algorithms
+set.seed(7)
+fit.lda <- train(Species~., data=trainData, method="lda", metric=metric, trControl=control)
+
+# 基于距离的方法KNN
+# 将每一个测试集样本点与训练集中每一个样本之间测算欧氏距离，然后取欧氏距离最近的K个点（k是可以人为划定的近邻取舍个数，K的确定会影响算法结果），并统计这K个训练集样本点所属类别频数，将其中频数最高的所属类别化为该测试样本点的预测类别。
+set.seed(7)
+fit.knn <- train(Species~., data=trainData, method="knn", metric=metric, trControl=control)
+
+# advanced algorithms
+# SVM
+library("e1071")
+set.seed(7)
+fit.svm <- train(Species~., data=trainData, method="svmRadial", metric=metric, trControl=control)
+# Random Forest
+library('randomForest')
+set.seed(7)
+fit.rf <- train(Species~., data=trainData, method="rf", metric=metric, trControl=control)
+```
+
+2.2 模型比较
+```{r}
+# summarize accuracy of models
+results <- resamples(list(lda=fit.lda, knn=fit.knn, svm=fit.svm, rf=fit.rf))
+summary(results)
+# compare accuracy of models
+dotplot(results)
+
+print(fit.lda)
+```
+
+
+3. 测试集验证并比较预测结果和真实值
+```{r}
+# estimate skill of LDA on the validation dataset
+predictions <- predict(fit.lda, validData)
+confusionMatrix(predictions, validData$Species)
+```
+

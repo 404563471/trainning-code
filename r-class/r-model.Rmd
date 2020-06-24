@@ -1,0 +1,131 @@
+---
+title: "r-model"
+author: "mason-YHY"
+date: "2020/6/14"
+output: html_document
+---
+
+PCA (Principal Components Analysis) 一步法
+===========================================================
+```{r}
+library(lars)
+data("diabetes")
+# x矩阵含442个病人的10个生理指标, y为因变量
+str(diabetes)
+diabetesX <- diabetes$x
+
+#cor是逻辑变量,当cor=TRUE表示用样本的相关矩阵R做主成分分析,当cor=FALSE表示用样本的协方差阵S做主成分分
+pcaX<-princomp(diabetesX, cor=FALSE)
+summary(pcaX)
+
+#由碎石图可以看出，第5个主成分之后，图线变化趋于平稳，因此可以选择前5个主成分做分析
+screeplot(pcaX, type='lines')
+
+# 绘制散点图表示样本分布情况
+plot(pcaX$scores[,1:2])
+```
+
+
+
+PCA (Principal Components Analysis) 步骤分解
+===========================================================
+### 数据预处理
+
+在PCA之前原始数据需要中心化（centering，数值减去平均值），类似的方法还有：中位数中心化。除了中心化以外，定标 (Scale, 数值除以标准差)，公式为（x-mean(x)）/sd(x) 也是数据前处理中需要考虑的一点。如果数据没有定标，则原始数据中方差大的变量对主成分的贡献会很大。
+
+```{r}
+scaleX <- scale(diabetesX, scale = FALSE)
+head(scaleX)
+head(diabetesX)
+```
+
+### 计算特征值和特征向量
+```{r}
+dat_cor <- cor(scaleX)
+dat_eigen <- eigen(dat_cor)
+dat_var <- dat_eigen$values ## 相关系数矩阵的特征值
+dat_var
+
+pca_var <- dat_var/sum(dat_var)
+pca_var
+
+pca_cvar <- cumsum(dat_var)/sum(dat_var)
+pca_cvar
+
+#崖低碎石图和累积贡献率图是对主成分贡献率和累积贡献率的一种直观表示，用以作为选择主成分个数的参考
+plot(pca_var, type = "line")
+plot(pca_cvar, type = "line")
+```
+
+### 计算主成分载荷(各个主成分与原始变量的相关系数)
+```{r}
+pca_vect <- dat_eigen$vector  ## 相关系数矩阵的特征向量
+loadings <- sweep(pca_vect,2,sqrt(pca_var),"*")
+rownames(loadings) <- colnames(diabetesX)
+loadings
+```
+
+EFA-----因子分析
+=========================================================
+```{r}
+fac <- factanal(diabetes, factors = 3, rotation = "none")
+fac
+```
+
+
+方差膨胀因子检验变量多重共线性，岭回归
+========================================================
+```{r}
+cement <- data.frame(X1 = c(7, 1, 11, 11, 7, 11, 3, 1, 2, 21, 1, 11, 10), 
+                     X2 = c(26, 29, 56, 31, 52, 55, 71, 31, 54, 47, 40, 66, 68), 
+                     X3 = c(6, 15, 8, 8, 6, 9, 17, 22, 18, 4, 23, 9, 8), 
+                     X4 = c(60, 52, 20, 47, 33, 22, 6, 44, 22, 26, 34, 12, 12), 
+                     Y = c(78.5, 74.3, 104.3, 87.6, 95.9, 109.2, 102.7, 72.5, 93.1, 115.9, 83.8, 113.3, 109.4))
+lm.sol <- lm(Y ~ ., data = cement)
+summary(lm.sol)
+
+#在回归中我们用VIF表示方差膨胀因子
+#表达式 VIF=1/(1-R^2)
+#随着多重共线性的严重程度增强，方差膨胀因子会逐渐的变大，一般的当VIF>=10的时候，我们就可以认为存在严重多重共线性；
+#利用car包中的vif（）函数查看各自变量间的共线情况
+library(car)
+vif(lm.sol)
+plot(X2 ~ X4, col = "red", data = cement)
+```
+
+#### ridge
+```{r}
+library(MASS)
+ridge.sol <- lm.ridge(Y ~ ., lambda = seq(0, 150, length = 151), data = cement, model = TRUE)
+summary(ridge.sol)
+ridge.sol$lambda[which.min(ridge.sol$GCV)]  ##找到GCV最小时的lambdaGCV
+ridge.sol$coef[which.min(ridge.sol$GCV)]  ##找到GCV最小时对应的系数
+
+# 画出图形，并作出lambdaGCV取最小值时的那条竖直线
+par(mfrow = c(1, 2))
+matplot(ridge.sol$lambda, t(ridge.sol$coef), xlab = expression(lamdba), ylab = "Cofficients", 
+    type = "l", lty = 1:20)
+abline(v = ridge.sol$lambda[which.min(ridge.sol$GCV)])
+# 下面的语句绘出lambda同GCV之间关系的图形
+plot(ridge.sol$lambda, ridge.sol$GCV, type = "l", xlab = expression(lambda), 
+    ylab = expression(beta))
+abline(v = ridge.sol$lambda[which.min(ridge.sol$GCV)])
+
+par(mfrow = c(1, 1))
+# 从上图看，lambda的选择并不是那么重要，只要不离lambda=0太近就没有多大差别。
+# 下面利用ridge包中的linearRidge()函数进行自动选择岭回归参数
+library(ridge)
+mod <- linearRidge(Y ~ ., data = cement)
+summary(mod)
+```
+
+#### LASSO
+```{r}
+library(lars)
+## Loaded lars 1.2
+x = as.matrix(cement[, 1:4])
+y = as.matrix(cement[, 5])
+(laa = lars(x, y, type = "lar"))  #lars函数值用于矩阵型数据
+plot(laa)
+summary(laa)
+```

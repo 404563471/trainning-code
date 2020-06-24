@@ -1,0 +1,50 @@
+---
+title: "maftools"
+author: "mason-YHY"
+date: "2020/6/9"
+output: html_document
+---
+
+1. maftools在线文档：http://www.bioconductor.org/packages/release/bioc/vignettes/maftools/inst/doc/maftools.html
+2. maf文件介绍：https://docs.gdc.cancer.gov/Data/File_Formats/MAF_Format/
+3. TCGA-maf下载链接：https://api.gdc.cancer.gov/data/1c8cfe5f-e52d-41ba-94da-f15ea1337efc
+
+```{r}
+library(maftools)
+laml.maf = system.file('extdata', 'tcga_laml.maf.gz', package = 'maftools') #path to TCGA LAML MAF file
+laml.clin = system.file('extdata', 'tcga_laml_annot.tsv', package = 'maftools') # clinical information containing survival information and histology. This is optional
+
+laml = read.maf(maf = laml.maf, clinicalData = laml.clin)
+laml
+#Shows sample summry.
+getSampleSummary(laml)
+```
+
+- missense_mutation:错义突变
+- frame_shift_del：移码缺失突变
+- nonsense_mutation：无义突变
+- frame_shift_ins：移码插入突变
+- splice_site：剪接位点
+- in_frame_ins：框内插入
+- in_frame_del：框内缺失
+- translation_start_site:转录起始位点
+- nonstop_mutation：终止密码子突变
+
+```{r}
+#Shows gene summary.
+getGeneSummary(laml)
+
+#shows clinical data associated with samples
+getClinicalData(laml)
+
+#Shows all fields in MAF
+getFields(laml)
+
+#Writes maf summary to an output file with basename laml.
+write.mafSummary(maf = laml, basename = 'laml')
+```
+
+```{r}
+plotmafSummary(maf = laml, rmOutlier = TRUE, addStat = 'median', dashboard = TRUE, titvRaw = FALSE)
+```
+

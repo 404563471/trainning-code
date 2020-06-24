@@ -1,0 +1,393 @@
+---
+title: "Multivariate-Statistical"
+author: "mason-YHY"
+date: "6/16/2020"
+output: html_document
+---
+
+Generalized Linear Models
+=====================================================
+```{r}
+library(MASS)
+data(anorexia)
+
+anorex.1 <- glm(Postwt ~ Prewt + Treat + offset(Prewt),
+                family = gaussian, data = anorexia)
+summary(anorex.1)
+opar <- par(mfrow=c(2,2))
+plot(anorex.1)
+par(opar)
+```
+
+logistic---0,1 分类
+======================================================
+频数资料,Logistic 回归	
+
+```{r}
+#单因素
+Treatment <- factor(Arthritis$Treatment, levels = c("Placebo", "Treated"), labels = c(0, 1))
+Improved <- factor(Arthritis$Improved, levels = c( "None", "Some", "Marked"), labels = c(0, 1, 2))
+xtabs(~ Treatment + Improved)
+fit <- glm(Treatment~Improved, family=binomial(link='logit'), subset = Improved!=1)
+fit
+summary(fit)
+
+
+#筛选子集
+fit <- glm(Treatment~Improved, family=binomial(link='logit'), subset = Improved!=1)
+fit
+summary(fit)
+```
+
+多变量的Logistic 回归
+```{r}
+Sex <- factor(Arthritis$Sex, levels = c("Female", "Male"), labels = c(0, 1))
+fit <- glm(Treatment~Sex + Improved, family=binomial(link='logit'), subset = Improved!=1)
+fit
+summary(fit)
+```
+
+
+ROC 曲线评价模型
+```{r}
+library(pROC)
+pre <- predict(fit)
+real <- Treatment[Improved!=1]
+modelroc <- roc(response=real, predictor = pre)
+plot(modelroc,xlim=c(1, 0), ylim=c(0, 1),print.auc=TRUE,auc.polygon=TRUE,grid=c(0.1,0.2),grid.col=c("green","red"),max.auc.polygon=TRUE,auc.polygon.col="blue",print.thres=TRUE)
+```
+
+
+
+
+Cox proportional hazards model---连续伴有删失
+========================================================
+
+- HR = 1: No effect
+- HR < 1: Reduction in the hazard
+- HR > 1: Increase in Hazard
+
+```{r}
+library("survival")
+library("survminer")
+
+data("lung")
+head(lung)
+res.cox <- coxph(Surv(time, status) ~ sex, data = lung)
+res.cox
+summary(res.cox)
+```
+
+批量单因素cox回归
+```{r}
+covariates <- c("age", "sex", "ph.karno", "ph.ecog", "wt.loss")
+univ_formulas <- sapply(covariates,
+function(x) as.formula(paste('Surv(time, status)~', x)))
+univ_models <- lapply( univ_formulas, function(x){coxph(x, data = lung)})
+# Extract data
+univ_results <- lapply(univ_models,
+function(x){
+x <- summary(x)
+p.value<-signif(x$wald["pvalue"], digits=2)
+wald.test<-signif(x$wald["test"], digits=2)
+beta<-signif(x$coef[1], digits=2);#coeficient beta
+HR <-signif(x$coef[2], digits=2);#exp(beta)
+HR.confint.lower <- signif(x$conf.int[,"lower .95"], 2)
+HR.confint.upper <- signif(x$conf.int[,"upper .95"],2)
+HR <- paste0(HR, " (",
+HR.confint.lower, "-", HR.confint.upper, ")")
+res<-c(beta, HR, wald.test, p.value)
+names(res)<-c("beta", "HR (95% CI for HR)", "wald.test",
+"p.value")
+return(res)
+#return(exp(cbind(coef(x),confint(x))))
+})
+res <- t(as.data.frame(univ_results, check.names = FALSE))
+as.data.frame(res)
+```
+
+多因素cox
+```{r}
+res.cox <- coxph(Surv(time, status) ~ age + sex + ph.ecog, data = lung)
+summary(res.cox)
+```
+
+Flexible parametric regression
+```{r}
+library(flexsurv)
+
+# built-in distribution
+flexsurvreg(Surv(time, status) ~ age + sex + ph.ecog, data = lung, dist = "gompertz")
+flexsurvreg(Surv(time, status) ~ age + sex + ph.ecog, data = lung, dist = "gamma")
+```
+
+
+层次聚类HCluster
+===========================================
+1. 开始时，将每个样本作为一类。
+2. 规定某种度量作为样本之间距离以及类距离之间的度量，并且计算之。（hculster里边的dist方法以及method属性）
+3. 将距离最短的两个类合并为一个类。
+4. 重复2-3，即不断合并最近的两个类，每次减少一个类，直到所有的样本合并为一个类。
+
+```{r}
+iris2 <- iris[, 1:4]
+euclideanDist <- dist(iris2, method = "euclidean")
+#euclideanDist
+hc <- hclust(euclideanDist, method = "ave")  #注意hcluster里边传入的是dist返回值对象
+
+plot(hc, hang=-1,labels=iris$Species, cex=0.5)  #这里的hang=-1使得树的节点在下方对齐
+#将树分为3块
+rect.hclust(hc,k=3)  
+
+#
+groups <- cutree(hc,k=3)
+groups
+```
+
+```{r}
+par(mfrow = c(6,1), mai=c(0.1, 0.1, 0.1, 0.1))
+
+Methods <- c("euclidean", "maximum", "manhattan", "canberra", "binary", "minkowski")
+for (distMethod in Methods) {
+  irisDist <- dist(iris2, method = distMethod)
+  irisHc <- hclust(irisDist, method = "ave")
+  plot(irisHc, hang=-1, main = NULL, sub = NULL, ylab = NULL, ann = FALSE ,labels = FALSE, axes = FALSE)  
+  rect.hclust(irisHc, k=3) 
+} 
+```
+
+```{r}
+par(mfrow = c(8,1), mai=c(0.1, 0.1, 0.1, 0.1))
+
+Methods <- c( "average", "complete", "median", "ward.D", "ward.D2", "single", "mcquitty", "centroid")
+for (hcMethod in Methods) {
+  irisDist <- dist(iris2, method = "euclidean")
+  irisHc <- hclust(irisDist, method = hcMethod)
+  plot(irisHc, hang=-1, main = NULL, sub = NULL, ylab = NULL, ann = FALSE ,labels = FALSE, axes = FALSE)  
+  rect.hclust(irisHc, k=3) 
+} 
+```
+
+快速聚类--kmeans
+==========================================================
+```{r}
+x <- rbind(matrix(rnorm(100, sd = 0.3), ncol = 2),
+           matrix(rnorm(100, mean = 1, sd = 0.3), ncol = 2))
+
+colnames(x) <- c("x", "y")
+cl <- kmeans(x, 2)
+
+plot(x, col = cl$cluster)
+points(cl$centers, col = 1:2, pch = 8, cex = 2)
+```
+
+聚类分析--kmeans分析
+==========================================================
+```{r}
+iris2<-iris[, 1:4]
+iris.kmeans<-kmeans(iris2, 3)
+iris.kmeans
+
+par(mfrow = c(1, 2))
+
+plot(iris2$Sepal.Length,iris2$Sepal.Width, col=iris.kmeans$cluster, pch="*")
+points(iris.kmeans$centers, pch="X", cex=1.5, col=4)
+
+plot(iris2$Sepal.Length, iris2$Sepal.Width,col=iris$Species, pch="*")
+```
+
+K-mediods算法
+=================================================
+a. 首先随机选取一组聚类样本作为中心点集
+b. 每个中心点对应一个簇
+c. 计算各样本点到各个中心点的距离（如欧几里德距离），将样本点放入距离中心点最短的那个簇中
+d. 计算各簇中，距簇内各样本点距离的绝度误差最小的点，作为新的中心点
+e. 如果新的中心点集与原中心点集相同，算法终止；如果新的中心点集与原中心点集不完全相同，返回b
+```{r}
+library(cluster)
+
+iris2.pam <- pam(iris2, 3)
+iris2.pam
+
+layout(matrix(c(1,2),1,2)) #每页显示两个图
+plot(iris2.pam)
+layout(matrix(1))
+```
+
+### 针对大型数据集
+```{r}
+iris2.clara <- clara(iris2,3)
+iris2.clara
+
+layout(matrix(c(1,2),1,2)) #每页显示两个图
+plot(iris2.clara)
+layout(matrix(1))
+```
+
+### fpc包对K-mediods方法的集成
+```{r}
+library(fpc)
+iris2.pamk<-pamk(iris2)
+table(iris2.pamk$pamobject$clustering,iris$Species)
+
+layout(matrix(c(1,2),1,2)) #每页显示两个图
+plot(iris2.pamk$pamobject)
+layout(matrix(1))
+```
+
+
+DBSCAN（基于密度的聚类算法）
+========================================================
+r-邻域：给定点半径为r的区域。
+核心点：如果一个点的r邻域内最少包含M个点，则该点称为核心点。
+直接密度可达：对于核心点P而言，如果另一个点O在P的r邻域内，那么称O为P的直接密度可达点。
+密度可达：对于P的直接密度可达点O的r邻域内，如果包含另一个点Q，那么称Q为P的密度可达点。
+密度相连：如果Q和N都是核心点P的密度可达点，但是并不在一条直线路径上，那么称两者为密度相连。
+
+指定R和M，计算所有的样本点，如果点p的r邻域内有超过M个点，那么创建一个以P为核心点的新簇，反复寻找这些核心点的直接密度可达点（之后可能是密度可达），将其加入到相应的簇，对于核心点发生密度相连的情况加以合并，当没有新的点加入到任何簇中时，算法结束。
+
+优点：
+（1）聚类速度快且能够有效处理噪声点和发现任意形状的空间聚类；
+（2）与K-MEANS比较起来，不需要输入要划分的聚类个数；
+（3）聚类簇的形状没有偏倚；
+（4）可以在需要时输入过滤噪声的参数。
+
+缺点：
+（1）当数据量增大时，要求较大的内存支持I/O消耗也很大；
+（2）当空间聚类的密度不均匀、聚类间距差相差很大时，聚类质量较差，因为这种情况下参数MinPts和Eps选取困难
+（3）算法聚类效果依赖与距离公式选取，实际应用中常用欧式距离，对于高维数据，存在“维数灾难”。
+```{r}
+library(fpc)
+ds <- dbscan(iris2,eps=0.42,MinPts = 5)
+table(ds$cluster, iris$Species)
+plot(ds, iris2)
+```
+
+
+PCA (Principal Components Analysis) 主成分分析
+===========================================================
+```{r}
+#cor是逻辑变量,当cor=TRUE表示用样本的相关矩阵R做主成分分析,当cor=FALSE表示用样本的协方差阵S做主成分分
+pcaX <- princomp(iris2, cor=FALSE)
+pcaX
+summary(pcaX)
+screeplot(pcaX, type='lines')
+
+plot(pcaX$scores[,1:2], type = 'n', asp = 1)
+text(pcaX$scores[,1:2], labels = iris$Species, cex = 0.6)
+```
+
+### EFA-----因子分析
+```{r}
+fac <- factanal(iris2, factors = 1, rotation = "none")
+fac
+```
+
+### 平行分析
+```{r}
+library(psych)
+irisCor <- cor(iris2)
+fa.parallel(irisCor, n.obs = 150, fa = "both", n.iter = 100, main = "parallel analyse plot")
+
+## 提取因子
+## rotate：旋转方法，默认为变异数最小法；"varimax"正交旋转将人为地强制3个因子不相关，"promax"斜交旋转允许3个因子相关。
+#fm：设定因子化方法，包含最大似然法(ml)，主轴迭代法(pa)，加权最小二乘法(wls)，广义加权最小二乘法(gls)以及默认的极小残差法(minres)
+
+faN <- fa(irisCor, nfactors = 2, rotate = "none", fm="pa")
+# PA表示成分载荷，即观测变量与因子的相关系数
+# h2表示公因子方差，即因子对每个变量的方法解释度
+# u2表示成分唯一性，即方差无法被因子解释的比例(1-h2)
+faN
+
+factor.plot(faN, labels = rownames(faN$loadings))
+fa.diagram(faN, digits = 3)
+```
+
+lDA线性判别
+=========================================================
+```{r}
+library(MASS)
+ld <- lda(Species~. , data = iris)
+ld
+plot(ld)
+rawG <- iris$Species
+ldG <- predict(ld)$class
+tab1 <- table(rawG, ldG)
+tab1
+sum(diag(prop.table(tab1)))
+
+ldPre <- predict(ld)
+#比较主成分分析结果
+par(mfrow=c(1, 2))
+plot(scale(ldPre$x), col=iris$Species)
+plot(scale(pcaX$scores[,1:2]), asp = 1, col=iris$Species)
+```
+
+QDA二次判别
+========================================================
+```{r}
+qd <- qda(Species~. , data = iris)
+qd
+qdG <- predict(qd)$class
+tab2 <- table(rawG, qdG)
+tab2
+sum(diag(prop.table(tab2)))
+```
+
+Bayes先验概率
+=======================================================
+```{r}
+ld <- lda(Species~. , data = iris, prior=c(1,2,3)/6)
+ld
+ldG2 <- predict(ld)$class
+tab3 <- table(rawG, ldG2)
+tab3
+sum(diag(prop.table(tab3)))
+```
+
+MDS-----Multidimensional Scaling 多维度数据缩放
+========================================================
+X 的k维主坐标是将X 中心化后n个样本的前k个主成分的值
+
+```{r}
+# 度量法，经典解，相似性数据是用距离尺度或比率尺度测得的
+mdsDist <- dist(iris[,1:4])
+mds1 <- cmdscale(mdsDist)
+mds1
+plot(mds1[,1], mds1[,2], type = 'n', asp = 1)
+text(mds1[,1], mds1[,2], labels = iris$Species, cex = 0.6)
+```
+
+
+```{r}
+# 非度量法， 若模型需要顺序量表水平的相似数据，就称为非度量化模型
+library(MASS)
+# 在iris中存在重复值，会导致距离矩阵出现0
+mdsDist <- dist(unique(iris[,1:4]))
+mds2 <- isoMDS(mdsDist)
+
+#stress (in percent) 为压力值，为k的单调递减函数，通过调节k使stress减小，小于5%为最佳，大于10%为差
+mds2
+mds2x <- mds2$points[,1]
+mds2y <- mds2$points[,2]
+
+plot(mds2x, mds2y, type = 'n', asp = 1)
+text(mds2x, mds2y, labels = iris$Species, cex = 0.6)
+```
+
+对应分析
+=======================================================
+```{r}
+library(ca)
+data("author")
+ca(author)
+plot(ca(author))
+```
+
+Canonical Correlations---经典相关分析
+======================================================
+```{r}
+sepal <- iris[, c("Sepal.Length", "Sepal.Width")]
+petal <- iris[, c("Petal.Length", "Petal.Width")]
+cancor(sepal, petal)
+```
