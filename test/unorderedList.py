@@ -1,4 +1,4 @@
-from DataStructure import UnorderedList
+from DataStructure import UnorderedList, OrderedList
 
 mylist=UnorderedList()
 
@@ -25,3 +25,18 @@ print(mylist.getNode(-2))
 
 mylist.getNode(-2).value = 10
 print(mylist)
+
+mylist.insert(0, 101)
+mylist.insert(4, 104)
+
+print(mylist)
+
+print("this is orderedlist")
+
+myorder = OrderedList()
+
+for i in range(5, 0, -1):
+    print(myorder)
+    myorder.add(i)
+
+print(myorder)

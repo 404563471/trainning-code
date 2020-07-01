@@ -1,5 +1,57 @@
 class Stack():
-    pass
+    def __init__(self):
+        self.values = []
+
+    def push(self, value):
+        '''进栈'''
+        self.values.append(value)
+
+    def pop(self):
+        '''出栈'''
+        if self.is_empty():
+            raise LookupError('stack is empty!')
+        else:
+            return self.values.pop()
+
+    def is_empty(self):
+        '''判断栈为空'''
+        empty = self.values == []
+        return empty
+
+    def top(self):
+        ''' 取出目前stack中最新的元素 '''
+        return self.values[-1]
+
+    def size(self):
+        return len(self.values)
+
+    def __str__(self):
+        return str(self.values)
+
+    def __repr__(self):
+        return str(self.values)
+
+
+class Queue(Stack):
+
+    def pop(self):
+        return self.values.pop(0)
+
+    def top(self):
+        return self.values[0]
+
+class Deque(Stack):
+
+    def __init__(self):
+        self.values = []
+        self.addRear = self.push
+        self.removeRear = self.pop
+
+    def addFront(self, value):
+        self.values.insert(0, value)
+
+    def removeFront(self):
+        return self.values.pop(0)
 
 
 class Node():
@@ -41,7 +93,6 @@ class UnorderedList():
                 current = current.next
             current.next = node
 
-
     def size(self):
         current=self.head
         count=0
@@ -72,6 +123,17 @@ class UnorderedList():
             current = current.next
             index += 1
         return current
+
+    def insert(self, position, node):
+        if position == 0 :
+            self.add(node)
+        else:
+            privious = self.getNode(position-1)
+            current = privious.next
+            if not isinstance(node, Node): node=Node(node)
+            privious.next = node
+            node.next = current
+
 
     def remove(self, position):
 
@@ -123,3 +185,29 @@ class UnorderedList():
             position += length
 
         return position
+
+
+class OrderedList(UnorderedList):
+
+    def add(self, node):
+        if not isinstance(node, Node): node=Node(node)
+        if self.head == None :
+           self.head = node
+        elif self.head.next == None :
+            if self.head.value > node.value :
+                self.head , self.head.next = node, self.head
+            else :
+                self.head.next = node
+        else:
+            current = self.head
+            if
+            current = previous.next
+            while node.value > previous.value :
+                previous = previous.next
+                current = current.next
+            previous.next = node
+            node.next = current
+
+
+
+
