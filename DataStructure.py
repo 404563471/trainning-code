@@ -193,20 +193,21 @@ class OrderedList(UnorderedList):
         if not isinstance(node, Node): node=Node(node)
         if self.head == None :
            self.head = node
-        elif self.head.next == None :
-            if self.head.value > node.value :
-                self.head , self.head.next = node, self.head
-            else :
-                self.head.next = node
         else:
+            previous = None
             current = self.head
-            if
-            current = previous.next
-            while node.value > previous.value :
-                previous = previous.next
+            while node.value > current.value :
+                previous = current
                 current = current.next
-            previous.next = node
-            node.next = current
+            
+            if previous == None :
+                self.head = node
+                node.next = current
+            elif current == None :
+                previous.next = node
+            else :
+                previous.next = node
+                node.next = current
 
 
 

@@ -1,3 +1,6 @@
+import os
+print(os.getcwd())
+import DataStructure
 from DataStructure import UnorderedList, OrderedList
 
 mylist=UnorderedList()
