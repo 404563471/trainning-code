@@ -1,1 +1,0 @@
-	vital_status	OS	stage	age	Grouptcga1	1	724	1	60	1tcga2	1	1624	1	58	2tcga3	0	1939	1	51	1tcga4	1	2532	2	55	1tcga5	1	1271	2	54	2tcga6	0	2442	1	54	2tcga7	1	757	3	64	2tcga8	1	848	2	68	1tcga9	0	3675	1	64	2tcga10	1	1229	2	82	2tcga11	0	1731	1	49	1
