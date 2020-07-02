@@ -1,0 +1,92 @@
+---
+title: "machine learning project 1"
+author: "mason-YHY"
+date: "2020/4/4"
+output: html_document
+---
+
+### 鸢尾花数据---分类问题
+1. 准备数据
+
+```{r}
+library(caret)
+# attach the iris dataset to the environment
+data(iris)
+# rename the dataset
+dataset <- iris
+# create a list of 80% of the rows in the original dataset we can use for training
+validation_index <- createDataPartition(dataset$Species, p=0.80, list=FALSE)
+# select 20% of the data for validation
+validation <- dataset[-validation_index,]
+# use the remaining 80% of data to training and testing the models
+dataset <- dataset[validation_index,]
+summary(dataset)
+```
+
+1.2 数据标准化处理
+```{r}
+preProcValues <- preProcess(dataset, method = c("center", "scale"))
+train_dataset <- predict(preProcValues, dataset)
+# 利用训练集的均值和方差对测试集进行标准化
+test_dataset <- predict(preProcValues, validation)
+```
+
+2. 评估算法
+2.1 挑选集中算法进行建模
+```{r}
+# Run algorithms using 10-fold cross validation
+control <- trainControl(method="cv", number=10)
+metric <- "Accuracy"
+
+# a) linear algorithms
+set.seed(7)
+fit.lda <- train(Species~., data=train_dataset, method="lda", metric=metric, trControl=control)
+# b) nonlinear algorithms
+# CART
+set.seed(7)
+fit.cart <- train(Species~., data=train_dataset, method="rpart", metric=metric, trControl=control)
+# kNN
+set.seed(7)
+fit.knn <- train(Species~., data=train_dataset, method="knn", metric=metric, trControl=control)
+# c) advanced algorithms
+# SVM
+set.seed(7)
+fit.svm <- train(Species~., data=train_dataset, method="svmRadial", metric=metric, trControl=control)
+# Random Forest
+set.seed(7)
+fit.rf <- train(Species~., data=train_dataset, method="rf", metric=metric, trControl=control)
+```
+
+2.2 模型比较
+```{r}
+# summarize accuracy of models
+results <- resamples(list(lda=fit.lda, cart=fit.cart, knn=fit.knn, svm=fit.svm, rf=fit.rf))
+summary(results)
+# compare accuracy of models
+dotplot(results)
+
+print(fit.lda)
+```
+
+2.3 查看效果最好的LDA变量的重要程度
+```{r}
+importance <- varImp(fit.lda, scale = F)
+plot(importance)
+```
+
+
+3. 测试集验证并比较预测结果和真实值
+```{r}
+# estimate skill of LDA on the validation dataset
+predictions <- predict(fit.lda, test_dataset)
+confusionMatrix(predictions, test_dataset$Species)
+```
+
+PS： 特征选择
+```{r}
+subset <- 1:4
+ctrl <- rfeControl(functions = rfFuncs, method = "cv")
+profile <- rfe(x=train_dataset[,1:4], y=train_dataset$Species, sizes = subset, rfeControl = ctrl)
+profile
+plot(profile, type=c("g", "o"))
+```

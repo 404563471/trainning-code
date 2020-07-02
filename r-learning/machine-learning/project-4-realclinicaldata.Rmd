@@ -1,0 +1,131 @@
+---
+title: "real clinical data"
+author: "mason-YHY"
+date: "2020/4/6"
+output: html_document
+---
+
+1. 载入数据
+```{r}
+total_data <- read.csv("all_data_process.csv")
+total_data[, 26:51] <- lapply(total_data[, 26:51], as.factor)
+total_data <- subset(total_data, select = -patient_ID)
+total_data$y <- total_data$y - 1
+total_data$y <- as.factor(total_data$y)
+str(total_data)
+```
+
+2. 处理缺失值
+```{r}
+library(mice)
+library(VIM)
+aggr_plot <- aggr(total_data, col=c('navyblue','red'), 
+                  numbers=TRUE, 
+                  sortVars=TRUE, 
+                  labels=names(total_data), 
+                  cex.axis=.7, 
+                  gap=3)
+mice_data <- mice(total_data, method = "pmm")
+complete_data <- complete(mice_data, 1)
+```
+
+3. 分割数据集
+```{r}
+library(caret)
+set.seed(7)
+validationIndex <- createDataPartition(complete_data$y, p=0.80, list=FALSE)
+# select 20% of the data for validation
+validation <- complete_data[-validationIndex,]
+# use the remaining 80% of data to training and testing the models
+dataset <- complete_data[validationIndex,]
+```
+
+4. 算法比较
+```{r}
+source("../trainning-code/r-class/machine-learning/caret_function.R")
+# 10-fold cross validation with 3 repeats
+trainControl <- trainControl(method="repeatedcv", number=10, repeats=3)
+# "nb"" method error
+select_m <- c("glm", "lda", "knn", "rpart", "svmRadial", "rf", "gbm", "C5.0")
+train_result <- parallel_train(selected_m = select_m, train_data = dataset, predict_var = "y", trainControl = trainControl, metric = "Accuracy")
+train_result_summary <- resamples(train_result)
+summary(train_result_summary)
+dotplot(train_result_summary)
+```
+
+5. 特征选择 数据转换
+```{r}
+
+importance <- varImp(train_result$svmRadial, scale = F)
+plot(importance)
+top_var <- c("var06", "var24", "var31", "var19", "var05", "var41", "var02", "var17", "var16", "var21")
+complete_data <- complete_data[, c("y", top_var)]
+validationIndex <- createDataPartition(complete_data$y, p=0.80, list=FALSE)
+# select 20% of the data for validation
+validation <- complete_data[-validationIndex,]
+# use the remaining 80% of data to training and testing the models
+dataset <- complete_data[validationIndex,]
+
+preProcValues <- preProcess(dataset, method=c("center", "scale", "BoxCox"))
+train_dataset <- predict(preProcValues, dataset)
+# 利用训练集的均值和方差对测试集进行标准化
+test_dataset <- predict(preProcValues, validation)
+```
+
+6. 重新算法比较
+```{r}
+select_m <- c("glm", "lda", "knn", "rpart", "svmRadial", "rf", "gbm", "C5.0")
+train_result <- parallel_train(selected_m = select_m, train_data = train_dataset, predict_var = "y", trainControl = trainControl, metric = "Accuracy")
+train_result_summary <- resamples(train_result)
+summary(train_result_summary)
+dotplot(train_result_summary)
+importance <- varImp(train_result$rf, scale = F)
+plot(importance)
+```
+
+7. 预测
+```{r}
+predict_final <- predict(train_result$gbm, test_dataset)
+confusionMatrix(predict_final, test_dataset$y)
+
+predict_final <- predict(train_result$rf, test_dataset)
+confusionMatrix(predict_final, test_dataset$y)
+
+predict_final <- predict(train_result$lda, test_dataset)
+confusionMatrix(predict_final, test_dataset$y)
+```
+
+8. 挑选前两个算法进行调参
+
+8.1 gbm调参
+```{r}
+gbmGrid <-  expand.grid(interaction.depth = c(1:9), 
+                        n.trees = (1:30)*50, 
+                        shrinkage = 0.1,
+                        n.minobsinnode = 20)
+gbmtuning <- train(y~., data=train_dataset, method="gbm", metric="Accuracy", tuneGrid=gbmGrid, trControl=trainControl)
+print(gbmtuning)
+# n.trees=150, interaction.depth=3, shrinkage=0.1, n.minobsinnode=20
+plot(gbmtuning)
+
+gbm_final_model <- gbm(y~., data=train_dataset, n.trees=150, interaction.depth=3, shrinkage=0.1, n.minobsinnode=20)
+#gbm_final_model <- gbmtuning$finalModel
+#predict_final <- predict(gbm_final_model, test_dataset)
+predict_final <- predict(gbmtuning, test_dataset)
+confusionMatrix(predict_final, test_dataset$y)
+```
+
+
+
+8.2 random forest调参
+```{r}
+tunegrid <- expand.grid(mtry=1:10)
+set.seed(7)
+rfDefault <- train(y~., data=train_dataset, method="rf", metric="Accuracy", tuneGrid=tunegrid, trControl=trainControl)
+print(rfDefault)
+plot(rfDefault)
+set.seed(7)
+rf_final_model <- randomForest::randomForest(y~., data=train_dataset, ntree=500, mtry=2) 
+rf_predict_final <- predict(rf_final_model, test_dataset)
+confusionMatrix(rf_predict_final, test_dataset$y)
+```
