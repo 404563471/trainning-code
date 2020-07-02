@@ -1,0 +1,314 @@
+---
+title: "three-parted packages"
+author: "Mason-YHY"
+date: "May 21, 2019"
+output: html_document
+---
+
+dplyr package test
+=============================================================
+```{r}
+df <- data.frame(
+  a = c(1:5),
+  b = letters[1:5]
+)
+df %>% head(2)
+
+df %>% head(2) %>% select(a)
+df %>% head(2) %>% select(-a)
+df %>% head(2) %>% select(a:b)
+df %>% head(2) %>% select(a:b, -a)
+
+df %>% filter(a>3)
+df %>% filter(b %in% c("a", "e"))
+df %>% filter(a>3, b %in% c("a", "e"))
+df %>% filter(a>3 & b %in% c("a", "e"))
+df %>% filter(str_detect(b, "a|e"))
+```
+
+
+dplyr package for group operation
+==============================================================
+```{r}
+library(dplyr)
+tbl_df(iris)
+iris %>% 
+  group_by(Species) %>% 
+  summarize( Sepal.Width=mean(Sepal.Width), 
+             Sepal.Length=mean(Sepal.Length), 
+             Petal.Length=mean(Petal.Length), 
+             Petal.Width=mean(Petal.Width) ) 
+```
+
+
+The data select function of dplyr package 
+==============================================================
+```{r}
+iris %>% 
+  select(Species, starts_with('Petal')) %>% 
+  filter(Species == 'setosa') %>% tbl_df()
+
+iris %>% 
+  select(Species, ends_with('Width')) %>% 
+  filter(Species == 'setosa') %>% tbl_df()
+```
+
+The data change function of dplyr package
+==============================================================
+```{r}
+iris %>% 
+  mutate(Sepal.area = pi * Sepal.Length * Sepal.Width) %>% 
+  tbl_df()
+
+iris %>% 
+  transmute(Sepal.area = pi * Sepal.Length * Sepal.Width) %>% 
+  tbl_df()
+```
+
+dplyr package for data join
+========================================================
+```{r}
+x<-data.frame(Name=c("John","Paul","George","Ringo","Stuart","Pete"),instrument=c("guitar","bass","guitar","drums","bass","drums"))
+y<-data.frame(name=c("John","Paul","George","Ringo","Brian"),band=c("TRUE","TRUE","TRUE","TRUE","FALSE"))
+
+
+library(dplyr)
+data1<-inner_join(x,y,by=c("Name"="name"))
+data2<-left_join(x,y,by=c("Name"="name"))
+data3<-right_join(x,y,by=c("Name"="name"))
+data4<-full_join(x,y,by=c("Name"="name"))
+
+#data5<-semi_join(x,y,by=c("Name"="name"))
+#data6<-anti_join(x,y)
+```
+
+tidy data like excel
+===================================================
+```{r}
+total.file <- read.csv("tangtang-2018.csv")
+library(stringr)
+total.file$Month <- sapply(total.file$FinishedTime, FUN = function(x) str_extract(x, "\\d+/\\d+"))
+
+library(dplyr)
+filter.stat <- total.file %>% filter(Status == "Done" & SummaryTime != 0) %>% select(User, Queue, Month, SummaryTime) %>%  
+                group_by(User, Queue, Month) %>% summarise(total_hour = round(sum(SummaryTime)/3600))
+
+write.csv(filter.stat, "./tangtang-hour.csv", row.names = F)
+
+
+######for R test
+
+total.file$User <- str_replace_all(total.file$User, c("big"="user1", "pzhai"="user2", "dnabox"="user3", "donglu"="user4", "nongda"="user5"))
+total.file$Server <- str_replace_all(total.file$Queue, c("bioblade"="server1", "biopnode"="server2", "biopnode2"="server3"))
+the.data <- total.file %>% select(User, Server, FinishedTime, SlotNum, RunTime, Status)
+
+write.csv(the.data,"~/Documents/my-project/培训/课程设计相关/R语言考试试题/server_time.csv", row.names = F)
+
+#total.file %>% mutate(test=SlotNum*RunTime)
+```
+
+
+data.table VS dplyr
+=========================================================
+```{r}
+dat <- structure(list(id = c(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 
+  2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L), name = c("Jane", "Jane", 
+  "Jane", "Jane", "Jane", "Jane", "Jane", "Jane", "Bob", "Bob", 
+  "Bob", "Bob", "Bob", "Bob", "Bob", "Bob"), year = c(1980L, 
+  1981L, 1982L, 1983L, 1984L, 1985L, 1986L, 1987L, 1985L, 1986L, 
+  1987L, 1988L, 1989L, 1990L, 1991L, 1992L), job = c("Manager", 
+  "Manager", "Manager", "Manager", "Manager", "Manager", "Boss", 
+  "Boss", "Manager", "Manager", "Manager", "Boss", "Boss", 
+  "Boss", "Boss", "Boss"), job2 = c(1L, 1L, 1L, 1L, 1L, 1L, 
+  0L, 0L, 1L, 1L, 1L, 0L, 0L, 0L, 0L, 0L)), .Names = c("id", 
+  "name", "year", "job", "job2"), class = "data.frame", row.names = c(NA, 
+  -16L))
+
+dat %>% group_by(name, job) %>% filter(job != "Boss" | year == 
+  min(year)) %>% mutate(cumu_job2 = cumsum(job2))
+
+
+setDT(dat)[, .SD[job != "Boss" | year == min(year)][, `:=`(cumjob, 
+  cumsum(job2))], by = list(id, job)]
+
+
+##%######################################################%##
+#                                                          #
+####             updating data by refrence              ####
+#                                                          #
+##%######################################################%##
+
+library(stringi)
+n <- 10
+stri_rand_shuffle(stri_paste(
+  stri_rand_strings(n, 1, '[0-9]'),
+  stri_rand_strings(n, 1, '[a-z]'),
+  stri_rand_strings(n, 1, '[A-Z]'),
+  stri_rand_strings(n, sample(5:11, 5, replace=TRUE), '[a-zA-Z0-9]')
+))
+
+
+stri_paste(
+  stri_rand_strings(n, 1, '[0-9]'),
+  stri_rand_strings(n, 1, '[a-z]'),
+  stri_rand_strings(n, 1, '[A-Z]'),
+  stri_rand_strings(n, sample(5:11, 5, replace=TRUE), '[a-zA-Z0-9]'))
+
+
+library(randomNames)
+DTt <- setDT(dat, key = "job")
+setkey(DTt, "job")
+DTt["Manager", name := randomNames(.N, which.names = "first")]
+DTt["Manager", `:=`(name = randomNames(.N, which.names = "first"), id = stri_rand_strings(.N, 1, '[0-9]'))]
+
+# id      name year     job job2
+# 1:  1      Jane 1986    Boss    0
+# 2:  1      Jane 1987    Boss    0
+# 3:  2       Bob 1988    Boss    0
+# 4:  2       Bob 1989    Boss    0
+# 5:  2       Bob 1990    Boss    0
+# 6:  2       Bob 1991    Boss    0
+# 7:  2       Bob 1992    Boss    0
+# 8:  1 Dani-Lynn 1980 Manager    1
+# 9:  1    Lettia 1981 Manager    1
+# 10:  1    Salena 1982 Manager    1
+# 11:  1   Ismaeel 1983 Manager    1
+# 12:  1   Jazmine 1984 Manager    1
+# 13:  1     Juana 1985 Manager    1
+# 14:  2   Zuhaira 1985 Manager    1
+# 15:  2    Chenai 1986 Manager    1
+# 16:  2   Olympia 1987 Manager    1
+
+
+DTt <- setDT(dat, key = "name")
+DTt[job == "Manager", name := randomNames(.N, which.names = "first")][]
+DTt[job == "Manager", .(name = randomNames(.N, which.names = "first"))][]
+
+library(dplyr)
+dat %>% mutate(name = replace(name, which(job == "Manager"), randomNames(9, which.names = "first")))
+
+
+##%######################################################%##
+#                                                          #
+####              updata data by reference              ####
+#                                                          #
+##%######################################################%##
+
+
+DT1 %>% filter(z>4)
+DT1 %>% slice(1:4)
+
+test <- DT1
+test[z %in% x, x := NA]
+test[z < 2, x := NA][]
+
+
+
+
+##%######################################################%##
+#                                                          #
+####                     about copy                     ####
+#                                                          #
+##%######################################################%##
+
+DTt <- setDT(dat, key = "name")
+library(pryr)
+identical(address(DTt), address(dat))
+
+DTt <- copy(setDT(dat, key = "name"))
+identical(address(DTt), address(dat))
+
+
+
+
+DTt <- copy(setDT(dat, key = "name"))
+
+names(DTt)
+DTt_name1 <- names(DTt)
+DTt[, add_col := "test"]
+DTt_name1
+
+names(DTt)
+DTt_name2 <- copy(names(DTt))
+DTt[, add_col2 := "test"]
+DTt_name2
+names(DTt)
+#identical(address(DTt_name1), address(names(DTt)))
+
+test <- DTt
+identical(address(test), address(DTt))
+
+
+##%######################################################%##
+#                                                          #
+####                more memory effcient to join              ####
+#                                                          #
+##%######################################################%##
+
+
+dt1 <- data.table(id=rep(1:2, 10), t=1:20, val1=1:20, val3=2:21, key="id,t")
+dt1 <- data.table(id=rep(1:2, 10), t=1:20, val1=1:20, val2=2:21, key="id,t")
+dt1 <- data.table(id=rep(1:2, 10), t=1:20, val1=1:20, key = "id")
+dt2 <- data.table(id=rep(1:2, 2), t=1:4, val2=1:4, key = "id")
+dt2 <- data.table(id=rep(1:2, 2), t=1:4, val2=1:4, key="id,t")
+dt3 <- data.table(i=rep(1:2, 2), t=1:4, val2=1:4, key="t")
+dt2[dt1,roll=TRUE]
+dt3[dt1,roll=TRUE]
+
+
+
+DT1 = data.table(x=c(1,1,1,1,2,2,2,2), y=c("a", "a", "b", "b"), z=1:8, key=c("x", "y"))
+DT2 = data.table(x=1:2, y=c("a", "b"), mul=4:3, key=c("x", "y"))
+DT2 = data.table(x=1:2, y=c("a", "b"), z=4:3, key=c("x", "y"))
+#DT2 = data.table(m=c("a", "b"), l=1:2, mul=4:3, key=c("l", "m"))
+
+DT1[DT2]
+DT1[DT2, .N, by=.EACHI]
+DT2[DT1]
+DT1[, .(z = sum(z)), keyby = .(x,y)][DT2][, z := z*mul][]
+
+DT1 %>% group_by(x, y) %>% summarise(z = sum(z)) %>% 
+  right_join(DT2) %>% mutate(z = z * mul)
+
+
+
+DT1[DT2, list(z=sum(z) * mul), by = .EACHI]
+DT1[DT2, list(z=sum(z) * mul)]
+
+
+DT1[DT2, col := i.z][]
+
+#Advanced: When i is a data.table, the columns of i can be referred to in j by using the prefix i., e.g., X[Y, .(val, i.val)]. 
+#Here val refers to X's column and i.val Y's.
+
+DT2 %>% right_join(DT1, by=c("x", "y"))
+DT1 %>% left_join(DT2, by=c("x", "y"))
+
+
+
+
+
+##%######################################################%##
+#                                                          #
+####                       syntax                       ####
+#                                                          #
+##%######################################################%##
+DT = data.table(x=1:10, y=11:20, z=rep(1:2, each=5))
+DF = as.data.frame(DT)
+
+identical(DT, DF) #[1] FALSE
+identical(address(DT), address(DF))
+
+DT[, if(any(x > 5L)) y[1L]-y[2L] else y[2L], by = z]
+DF %>% group_by(z) %>% summarise(if (any(x > 5L)) y[1L] - y[2L] else y[2L])
+# z V1
+# 1: 1 12
+# 2: 2 -1
+
+DT[, if(any(x > 5L)) y[1L] - y[2L], by = z]
+DF %>% group_by(z) %>% filter(any(x > 5L)) %>% summarise(y[1L] - y[2L])
+# z V1
+# 1: 2 -1
+```
+
+
