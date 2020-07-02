@@ -1,0 +1,12 @@
+OTU	NP1	NP2	NP3	NP4	NP5	NP8	NP9	NP10	NP12	NP17	NP16	NP19	NP20	NP21	NP23	NP28
+OTU1015518:k__Bacteria; p__Actinobacteria; c__Actinobacteria; o__Actinomycetales; f__Corynebacteriaceae; g__Corynebacterium	1	6	2	45	0	0	6	0	0	1	1	7	0	7	0	2
+OTU343089:k__Bacteria; p__Proteobacteria; c__Gammaproteobacteria; o__Pseudomonadales; f__Moraxellaceae; g__Acinetobacter; s__johnsonii	42	190	51	72	292	75	162	768	462	333	51	990	527	235	710	1288
+OTU68624:k__Bacteria; p__Proteobacteria; c__Betaproteobacteria; o__Burkholderiales; f__Alcaligenaceae; g__Achromobacter; s__	0	0	3	0	0	0	1	0	0	0	0	1	0	0	2	3
+OTU219088:k__Bacteria; p__Proteobacteria; c__Gammaproteobacteria; o__Pseudomonadales; f__Pseudomonadaceae; g__Pseudomonas	52	43	40	41	25	32	34	58	40	40	31	39	29	40	44	40
+OTU4295230:k__Bacteria; p__Bacteroidetes; c__Flavobacteriia; o__Flavobacteriales; f__[Weeksellaceae]; g__Elizabethkingia; s__meningoseptica	1	2	4	4	1	1	1	4	3	7	1	4	2	1	126	77
+OTU886735:k__Bacteria; p__Firmicutes; c__Bacilli; o__Lactobacillales; f__Aerococcaceae; g__Alloiococcus; s__	4	4	0	0	2	1	1	48	0	0	0	0	2	23	0	3
+OTU4358096:k__Bacteria; p__Proteobacteria; c__Betaproteobacteria; o__Burkholderiales; f__Oxalobacteraceae	1	16	11	12	42	17	19	66	81	63	10	111	104	21	98	118
+OTU4290144:k__Bacteria; p__Firmicutes; c__Bacilli; o__Lactobacillales; f__Enterococcaceae; g__Enterococcus; s__	0	1	6	0	0	5	3	1	0	1	0	2	10	2	35	21
+OTU386088:k__Bacteria; p__Actinobacteria; c__Actinobacteria; o__Actinomycetales; f__Propionibacteriaceae; g__Propionibacterium	7	1	15	0	0	12	2	0	2	4	0	0	1	22	1	0
+OTU3407052:k__Bacteria; p__Bacteroidetes; c__Bacteroidia; o__Bacteroidales; f__Bacteroidaceae	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+OTU219457:k__Bacteria; p__Proteobacteria; c__Gammaproteobacteria; o__Pseudomonadales; f__Pseudomonadaceae; g__Pseudomonas	15	15	9	9	7	12	13	10	7	10	10	7	11	10	12	6

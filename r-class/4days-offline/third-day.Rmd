@@ -1,0 +1,290 @@
+---
+title: "R leason of the Third Day"
+author: "Mason-YHY"
+output: html_document
+email: yuanhy@bcc.ac.cn
+---
+
+## Example 1.1
+
+Different about NA and NULL
+=============================================================
+```{r}
+# na is a data can be use
+y.na<-c(10,20,30,40,NA)
+mean(y.na)
+mean(y.na, na.rm = T)
+length(y.na)
+
+# null is nothing
+y.null<-c(10,20,30,40,NULL)
+mean(y.null)
+length(y.null)
+```
+
+
+dplyr package test
+=============================================================
+```{r}
+df <- data.frame(
+  a = c(1:5),
+  b = letters[1:5]
+)
+df %>% head(2)
+
+df %>% head(2) %>% select(a)
+df %>% head(2) %>% select(-a)
+df %>% head(2) %>% select(a:b)
+df %>% head(2) %>% select(a:b, -a)
+
+df %>% filter(a>3)
+df %>% filter(b %in% c("a", "e"))
+df %>% filter(a>3, b %in% c("a", "e"))
+df %>% filter(a>3 & b %in% c("a", "e"))
+df %>% filter(str_detect(b, "a|e"))
+
+
+
+```
+
+
+dplyr package for group operation
+==============================================================
+```{r}
+library(dplyr)
+tbl_df(iris)
+iris %>% 
+  group_by(Species) %>% 
+  summarize( Sepal.Width=mean(Sepal.Width), 
+             Sepal.Length=mean(Sepal.Length), 
+             Petal.Length=mean(Petal.Length), 
+             Petal.Width=mean(Petal.Width) ) 
+```
+
+## Example 1.2
+
+The data select function of dplyr package 
+==============================================================
+```{r}
+iris %>% 
+  select(Species, starts_with('Petal')) %>% 
+  filter(Species == 'setosa') %>% tbl_df()
+
+iris %>% 
+  select(Species, ends_with('Width')) %>% 
+  filter(Species == 'setosa') %>% tbl_df()
+```
+
+The data change function of dplyr package
+==============================================================
+```{r}
+iris %>% 
+  mutate(Sepal.area = pi * Sepal.Length * Sepal.Width) %>% 
+  tbl_df()
+
+iris %>% 
+  transmute(Sepal.area = pi * Sepal.Length * Sepal.Width) %>% 
+  tbl_df()
+```
+
+plot the normal distribution
+==============================================================
+```{r}
+curve(dnorm(x), -2,2)
+curve(dt(x, 10), -2, 2, add=T, col="red")
+curve(dt(x, 20), -2, 2, add=T, col="blue")
+```
+
+
+Min-Max normalization
+==============================================================
+```{r}
+# Age vector
+age <- c(25, 35, 50)
+# Salary vector
+salary <- c(200000, 1200000, 2000000)
+# Data frame created using age and salary
+df <- data.frame( "Age" = age, "Salary" = salary, stringsAsFactors = FALSE)
+# create the function for normalization
+normalize <- function(x) {
+    return ((x - min(x, na.rm = T)) / (max(x, na.rm = T) - min(x, na.rm = T)))
+}
+# apply the function to each column
+sapply(df, normalize)
+```
+
+Z-Score standardizing
+===============================================================
+```{r}
+#standardizing don't change the distribution
+sugar <- scan("stat/sugar.txt")
+sugar.scale <- scale(sugar)
+
+hist(sugar)
+hist(sugar.scale)
+plot(density(sugar))
+plot(density(sugar.scale))
+
+
+#the example 1: standardizing compare with different datasets.
+z.data <- data.frame(math=c(112, 108, 21), english=c(108, 97, 18), row.names = c("xiaoming", "total.mean", "total.sd"))
+sapply(z.data, function(x) pnorm((x[1]-x[2])/x[3]))
+
+scale(df)
+```
+
+## Example 2.1
+
+One population of T test for single sided and two sided
+================================================================
+```{r}
+# left sided
+sugar <- scan("stat/sugar.txt")
+qqnorm(sugar)
+shapiro.test(sugar)
+t.test(sugar, mu=500, alternative="less")
+
+
+# right sided
+exh <- scan("stat/exh.txt")
+qqnorm(exh)
+shapiro.test(exh)
+t.test(exh, mu=20, alternative = "greater")
+
+# two sided
+t.test(exh, mu=20, alternative = "two.sided")
+```
+
+## Example 2.2
+
+Two population of T test for homogeneity of variance
+==================================================================
+```{r}
+# the default is the two variances as being not equal
+drug.var <- read.table("stat/drug.txt",header=T)
+t.test(value~group, drug.var, alternative = "greater", var.equal = F)
+
+# treat the two variances as being equal
+t.test(value~group, drug.var, alternative = "greater", var.equal = T)
+
+# F-test for homogeneity of variances
+var.test(value~group, drug.var)
+
+# Bartlett test for homogeneity of variances
+bartlett.test(value~group, drug.var)
+
+library(ggplot2)
+qplot(x=as.factor(group), y=value, data=drug.var, geom = "boxplot")
+```
+
+## Example 2.3
+
+Paired T test
+=================================================================
+```{r}
+# the diet example
+diet<-read.table("stat/diet.txt")
+t.test(diet$V1,diet$v2, pair=T)
+
+# the TP53 example
+aa <- read.table("stat/stas.txt",sep="\t",head=TRUE)
+t.test(age~TP53_mutation,data=aa)
+#t.test(TP53_mutation~age,data=aa)
+boxplot(aa[aa$TP53_mutation==0,"age"] , aa[aa$TP53_mutation==1,"age"])
+```
+
+## Example 2.4
+
+Analysis of Variance(ANOVA) example1
+=================================================================
+```{r}
+lamp <- data.frame(
+  X=c(1600, 1610, 1650, 1680, 1700, 1700, 1780, 1500, 1640, 
+      1400, 1700, 1750, 1640, 1550, 1600, 1620, 1640, 1600, 
+      1740, 1800, 1510, 1520, 1530, 1570, 1640, 1600),
+  A=factor(c(rep(1,7),rep(2,5), rep(3,8), rep(4,6)))
+)
+
+lamp.aov<-aov(X ~ A, data=lamp)
+summary(lamp.aov)
+plot(lamp$X~lamp$A)
+```
+
+
+Analysis of ANOVA example2
+=================================================================
+```{r}
+mouse <- data.frame(
+   X=c( 2, 4, 3, 2, 4,  7, 7, 2, 2, 5, 4, 5,  6, 8, 5, 10, 7,
+      12, 12, 6, 6, 7, 11, 6, 6, 7, 9, 5, 5, 10, 6, 3, 10),
+   A=factor(c(rep(1,11),rep(2,10), rep(3,12)))
+)
+mouse.aov<-aov(X ~ A, data=mouse)
+summary(mouse.aov)
+plot(mouse$X~mouse$A)
+```
+
+chisq test
+================================================================
+```{r}
+customer.data <- matrix(c(527,206,72,102), 2, 2)
+chisq.test(customer.data)
+```
+
+```{r}
+forbes<-read.table("stat/press.txt",header=T)
+forbes$log100 <- 100*log10(forbes$pHg)
+
+plot(forbes$F, forbes$log100)
+lm.sol<-lm(log100~F + I(F^2), data=forbes)
+summary(lm.sol)
+abline(lm.sol)
+
+```
+```{r}
+blood<-data.frame(
+   X1=c(76.0, 91.5, 85.5, 82.5, 79.0, 80.5, 74.5, 79.0, 85.0, 76.5, 82.0,            95.0, 92.5),
+   X2=c(50, 20, 20, 30, 30, 50, 60, 50, 40, 55, 40, 40, 20),
+   Y= c(120, 141, 124, 126, 117, 125, 123, 125,132, 123, 132, 155, 147))
+
+lm.sol<-lm(Y ~ X1+X2, data=blood)
+lm.sol.test1 <- lm(Y ~ X1+X2+X1:X2, data=blood)
+lm.sol.test2 <- lm(Y ~ X1*X2, data=blood)
+summary(lm.sol)
+summary(lm.sol.test1)
+summary(lm.sol.test2)
+
+#nlm
+```
+
+
+ggbiplot
+===========================================================
+```{r}
+library(ggbiplot)
+pca.data <- iris[, 1:4]
+pca.group <- iris[, 5]
+
+pca.out <- prcomp(pca.data, scale. = TRUE) 
+
+summary(pca.out)
+print(pca.out)
+pca_data <- predict(pca.out)
+
+ggbiplot(pca.out, groups = iris$Species, ellipse = T, var.axes = F)
+ggbiplot(pca.out, groups = iris$Species, ellipse = T, var.axes = T)
+
+pca_data <- as.data.frame(pca_data)
+pca_data$group <- iris$Species
+ggplot(data = pca_data, aes(x=PC1, y=PC2, color=group)) + geom_jitter()
+
+pca_plot <- ggbiplot(pca.out, groups = iris$Species, ellipse = T, var.axes = F)
+pca_plot_edit <- ggedit(pca_plot)
+
+data(wine)
+wine.pca <- prcomp(wine, scale. = TRUE)
+print(ggbiplot(wine.pca, obs.scale = 1, var.scale = 1, groups = wine.class, ellipse = TRUE, circle = TRUE))
+```
+
+
+

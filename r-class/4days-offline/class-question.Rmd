@@ -1,0 +1,75 @@
+---
+title: "class-question"
+author: "Mason-YHY"
+output: html_document
+email: yuanhy@bcc.ac.cn
+---
+
+plot map with pint
+=========================================================
+```{r}
+library(sp)
+library(stringr)
+library(maps)
+zta<-read.csv("plot_data/mapdata.csv", header=T)##
+Lat<-zta$latitude
+Long<-zta$longitude
+
+head(Long)
+head(state.center$y)
+dd2dms(state.center$y[1:5], NS=TRUE)
+
+clean.data.latitude <- function(x){
+  x <- str_replace(x, "°", "d")
+  x <- str_replace(x, "º", "d")
+  x <- str_replace(x, "′", "'")
+  x <- str_replace(x, " ", "")
+  return(x)
+}
+trans.latitude <- function(x){
+  x <- clean.data.latitude(x)
+  x <- as.numeric(char2dms(x))
+  return(x)
+}
+
+Lat.change <- trans.latitude(Lat)
+Long.change <- trans.latitude(Long)
+map("world")
+FS1 <- points(Long.change, Lat.change, pch=1, cex=.8, col="blue")
+```
+
+##ggmuller
+===========================================================================
+evolutionary dynamics as stacked area plots that combine information about frequency dynamics and phylogeny,
+```{r}
+library(ggmuller)
+vignette("ggmuller")
+#vignette(all = TRUE)
+Muller_df <- get_Muller_df(example_edges, example_pop_df)
+Muller_plot(Muller_df)
+
+# Plots of this type are commonly used to show how evolutionary dynamics respond to environmental change, such as in a tumour during chemotherapy
+Muller_pop_plot(Muller_df)
+```
+
+Redundancy Analysis (RDA)
+============================================================
+```{r}
+library(vegan)
+data(dune)
+data(dune.env)
+dune.Manure <- rda(dune ~ Manure, dune.env)
+plot(dune.Manure) 
+#spp=decostand(sp,method = "hellinger")
+```
+
+glm
+=====================================================
+```{r}
+utils::data(anorexia, package = "MASS")
+
+anorex.1 <- glm(Postwt ~ Prewt + Treat + offset(Prewt),
+                family = gaussian, data = anorexia)
+summary(anorex.1)
+
+```

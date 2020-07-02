@@ -1,0 +1,527 @@
+---
+title: "r-statistics"
+author: "mason-YHY"
+date: "4/3/2020"
+output: html_document
+---
+normal distribution
+=====================================================
+> f(x) = 1/(√(2 π) σ) e^-((x - μ)^2/(2 σ^2)) 
+
+- desity: dnorm(x, mean = 0, sd = 1, log = FALSE)
+- distribution: pnorm(q, mean = 0, sd = 1, lower.tail = TRUE, log.p = FALSE)
+- quantile: qnorm(p, mean = 0, sd = 1, lower.tail = TRUE, log.p = FALSE)
+- random generation: rnorm(n, mean = 0, sd = 1)
+
+```{r}
+rnorm(10)
+normX <- seq(-3,3,0.1)
+plot(normX,dnorm(normX))
+
+dnorm(0) == 1/sqrt(2*pi)
+dnorm(1) == exp(-1/2)/sqrt(2*pi)
+dnorm(1) == 1/sqrt(2*pi*exp(1))
+
+plot(normX, pnorm(normX))
+
+normP <- seq(0,0.4,0.01)
+plot(normP, qnorm(normP))
+```
+
+
+plot the normal distribution and student distribution
+==============================================================
+```{r}
+curve(dnorm(x), -3,3)
+curve(dt(x, 5), -3, 3, add=T, col="red")
+curve(dt(x, 10), -3, 3, add=T, col="blue")
+
+# 均匀分布
+curve(dunif(x))
+```
+
+中心极限定理
+==============================================================
+如果样本量足够大，则变量均值的采样分布将近似于正态分布，而与该变量在总体中的分布无关。
+
+```{r}
+set.seed(100)
+somedata <- runif(10000, min = 0, max = 1)
+
+sampleTable <- c()
+for (num in 1:1000) {
+  set.seed(num)
+  sampleTable <- cbind(sampleTable, sample(somedata, 20))
+}
+
+sampleM <- colMeans(sampleTable)
+hist(sampleM)
+```
+
+大数定律、小概率事件、P值、置信区间
+==============================================================
+- 大数定律说如果统计数据足够大，那么事物出现的频率就能无限接近他的期望值。
+```{r}
+set.seed(100)
+sugarFactory <- rnorm(10000, mean=500, sd=4)
+
+sampleTable <- c()
+for (num in 1:100) {
+  set.seed(num)
+#  sampleTable <- cbind(sampleTable, sample(sugarFactory, 200))
+  sampleTable <- cbind(sampleTable, sample(sugarFactory, 20))
+}
+
+sampleM <- colMeans(sampleTable)
+sampleSE <- apply(sampleTable, 2, function(x){sd(x)/sqrt(length(x))})
+
+results <- c()
+for (num in 1:100) {
+  results <- c(results, sampleM[num] < 500-1.96*sampleSE[num] || sampleM[num] > 500+1.96*sampleSE[num] )
+}
+
+sum(results)
+```
+
+One population of T test for single sided and two sided
+================================================================
+```{r}
+set.seed(100)
+sugar <- rnorm(20, mean = 500, sd = 1)
+##QQplot
+qqnorm(sugar)
+#Shapiro-Wilk Normality Test
+shapiro.test(sugar)
+
+# left sided
+t.test(sugar, mu=500, alternative="less")
+
+set.seed(100)
+sugar <- rnorm(20, mean = 499, sd = 1)
+t.test(sugar, mu=500, alternative="less")
+
+set.seed(100)
+sugar <- rnorm(20, mean = 499, sd = 5)
+t.test(sugar, mu=500, alternative="less")
+
+set.seed(100)
+sugar <- rnorm(80, mean = 499, sd = 5)
+t.test(sugar, mu=500, alternative="less")
+
+set.seed(100)
+sugar <- rnorm(20, mean = 499, sd = 2.5)
+t.test(sugar, mu=500, alternative="less")
+
+# right sided
+t.test(sugar, mu=500, alternative = "greater")
+
+# two sided
+t.test(sugar, mu=500, alternative = "two.sided")
+```
+
+
+Two population of T test for homogeneity of variance
+==================================================================
+```{r}
+set.seed(100)
+group1 <- rnorm(20, mean = 500, sd = 1)
+set.seed(200)
+group2 <- rnorm(20, mean = 499, sd = 1)
+
+# the default is the two variances as being not equal
+t.test(group1, group2, alternative = "greater", var.equal = F)
+# treat the two variances as being equal
+t.test(group1, group2, alternative = "greater", var.equal = T)
+# F-test for homogeneity of variances
+var.test(group1, group2)
+boxplot(group1, group2)
+
+
+set.seed(100)
+group1 <- rnorm(20, mean = 500, sd = 1)
+set.seed(200)
+group2 <- rnorm(20, mean = 499, sd = 3)
+
+# the default is the two variances as being not equal
+t.test(group1, group2, alternative = "greater", var.equal = F)
+# treat the two variances as being equal
+t.test(group1, group2, alternative = "greater", var.equal = T)
+# F-test for homogeneity of variances
+var.test(group1, group2)
+boxplot(group1, group2)
+
+
+set.seed(100)
+group1 <- rnorm(20, mean = 500, sd = 1)
+set.seed(200)
+group2 <- rnorm(80, mean = 499, sd = 3)
+
+# the default is the two variances as being not equal
+t.test(group1, group2, alternative = "greater", var.equal = F)
+# treat the two variances as being equal
+t.test(group1, group2, alternative = "greater", var.equal = T)
+# F-test for homogeneity of variances
+var.test(group1, group2)
+boxplot(group1, group2)
+```
+
+Paired T test
+=================================================================
+```{r}
+set.seed(100)
+group1 <- sort(rnorm(20, mean = 500, sd = 3))
+set.seed(200)
+group2 <- sort(rnorm(20, mean = 499, sd = 3))
+
+t.test(group1, group2, var.equal = T)
+t.test(group1, group2, pair=T, var.equal = T)
+```
+
+
+不满足参数假设----Wilcoxon 秩和检验
+==============================================================
+1. 两组样本方差不齐
+```{r}
+set.seed(100)
+group1 <- rnorm(20, mean = 500, sd = 1)
+set.seed(200)
+group2 <- rnorm(80, mean = 499, sd = 3)
+var.test(group1, group2)
+wilcox.test(group1, group2, alternative = "greater")
+
+set.seed(100)
+group1 <- sort(rnorm(20, mean = 500, sd = 1))
+set.seed(200)
+group2 <- sort(rnorm(80, mean = 500, sd = 3))
+wilcox.test(group1, group2, alternative = "greater")
+```
+
+2. 配对样本差值不符合正太分布
+```{r}
+set.seed(100)
+group1 <- sort(rnorm(20, mean = 500, sd = 3))
+set.seed(200)
+group2 <- sort(rnorm(20, mean = 499, sd = 3))
+
+shapiro.test(group1-group2)
+wilcox.test(group1, group2, paired = TRUE, alternative = "greater")
+```
+
+
+Wilcoxon test
+===============================================================
+```{r}
+## Hollander & Wolfe (1973), 29f.
+## Hamilton depression scale factor measurements in 9 patients with
+##  mixed anxiety and depression, taken at the first (x) and second
+##  (y) visit after initiation of a therapy (administration of a
+##  tranquilizer).
+x <- c(1.83,  0.50,  1.62,  2.48, 1.68, 1.88, 1.55, 3.06, 1.30)
+y <- c(0.878, 0.647, 0.598, 2.05, 1.06, 1.29, 1.06, 3.14, 1.29)
+t.test(x, y, paired = TRUE, alternative = "greater")
+shapiro.test(y)
+
+wilcox.test(x, y, paired = TRUE, alternative = "greater")
+wilcox.test(y - x, alternative = "less")    # The same.
+wilcox.test(y - x, alternative = "less", exact = FALSE, correct = FALSE) # H&W large sample approximation
+```
+
+Two-sample Wilcoxon test
+===============================================================
+```{r}
+## Hollander & Wolfe (1973), 69f.
+## Permeability constants of the human chorioamnion (a placental
+##  membrane) at term (x) and between 12 to 26 weeks gestational
+##  age (y).  The alternative of interest is greater permeability
+##  of the human chorioamnion for the term pregnancy.
+x <- c(0.80, 0.83, 1.89, 1.04, 1.45, 1.38, 1.91, 1.64, 0.73, 1.46)
+y <- c(1.15, 0.88, 0.90, 0.74, 1.21)
+wilcox.test(x, y, alternative = "g")        # greater
+wilcox.test(x, y, alternative = "greater", exact = FALSE, correct = FALSE) # H&W large sample approximation
+wilcox.test(rnorm(10), rnorm(10, 2), conf.int = TRUE)
+
+## Formula interface.
+boxplot(Ozone ~ Month, data = airquality)
+wilcox.test(Ozone ~ Month, data = airquality, subset = Month %in% c(5, 8))
+```
+
+
+Analysis of Variance(ANOVA) 罗纳德.费舍尔（1890~1962），生于伦敦英国统计与遗传学家，现代统计学的奠基人之一
+=================================================================
+设计| 	表达式
+----|-------
+单因素ANOVA | 	y ~ A
+含单个协变量的单因素ANOVA |	y ~ x + A
+双因素ANOVA |	y ~ A * B
+含两个协变量的双因素ANOVA |	y ~ x1 + x2 + A * B
+随机化区组 |	y ~ B + A (B是区组因子)
+单因素组内ANOVA |	y ~ A + Error(subject/A)
+含单个组内因子(W)和单个组间因子的重复测量ANOVA |	y ~ B * W + Error(Subject/W)
+
+符号 |	用途
+-----|------
+~ |	分隔符号，左边为响应变量（因变量），右边为解释变量（自变量）
+: |	表示预测变量的交互项
+* |	表示所有可能交互项的简洁方式
+^ |	表示交互项达到某个次数
+. |	表示包含除因变量外的所有变量
+
+#### 单因素ANOVA
+```{r}
+set.seed(100)
+group1 <- rnorm(20, mean = 500, sd = 1)
+set.seed(200)
+group2 <- rnorm(20, mean = 499, sd = 1)
+set.seed(300)
+group3 <- rnorm(20, mean = 499, sd = 3)
+
+g3 <- data.frame( value=c(group1, group2, group3),
+                    group=factor(rep(c(1,2,3), c(20,20,20))))
+
+g3aov <- aov(value ~ group, data=g3)
+summary(g3aov)
+plot(value ~ group, data=g3)
+```
+
+
+```{r}
+#library(mvtnorm)
+#library(TH.data)
+#library(MASS)
+#cholesterol数据集包含50个患者接收5种降低胆固醇疗法的一种，前三种是同样的药物不同的用法，后二者是候选药物。哪种药物疗法降低胆固醇最多呢？
+library(multcomp)
+data(cholesterol)
+head(cholesterol)
+
+sapply(split(cholesterol$response, cholesterol$trt), shapiro.test)
+
+bartlett.test(response ~ trt, data = cholesterol)
+
+fit <- aov(response ~ trt, cholesterol)
+summary(fit)
+plot(response ~ trt, cholesterol)
+
+multiCompare <- TukeyHSD(fit)
+multiCompare
+
+#第一个par语句用来旋转轴标签，第二个用来增大左边界的面积，可使标签摆放更美观
+par(las=2)
+par(mar=c(5,8,4,2))
+plot(multiCompare)
+```
+
+#### 含单个协变量的单因素ANOVA
+```{r}
+#litter数据集: 怀孕的小鼠被分为四个小组，每组接受不同剂量的药物处理。产下幼崽的体重均值为因变量，怀孕时间为协变量。
+data(litter)
+head(litter)
+
+fit <- aov(weight ~ gesttime + dose, data = litter)
+fit
+summary(fit)
+
+fit <- aov(weight ~ dose, data = litter)
+fit
+summary(fit)
+
+fit <- aov(weight ~ dose + gesttime, data = litter)
+fit
+summary(fit)
+```
+
+#### 双因素ANOVA
+```{r}
+fit <- aov(weight ~ gesttime*dose, data=litter)
+fit
+summary(fit)
+
+fit <- aov(weight ~ gesttime + dose + gesttime:dose, data=litter)
+fit
+summary(fit)
+
+#library(HH)
+#ancova(weight ~ gesttime + dose, data=litter)
+```
+
+
+多个独立样本, Kruskal-Wallis秩和检验
+===============================================================
+```{r}
+normal <-	c(293,	 409,	 392,	 244,	 213,	 409,	 57,	 97,	 244,	 254,	 352,	 168)	
+mild	<- c(441,	 538,	 390,	 589,	 244,	 409,	 72,	 168,	 254,	 374)	
+severe	<- c(807,	 833,	 409,	 914,	 380,	 883,	 254,	 993,	 667)	
+cd8	<- c(normal, mild, severe)	 
+group	<- c(rep(1,	length(normal)),	rep(2, length(mild)), rep(3, length(severe)))	
+  
+kruskal.test(cd8~group)
+boxplot(cd8~group)
+```
+
+
+Pearson's chisq test
+================================================================
+若n个相互独立的随机变量ξ₁、ξ₂、……、ξn ，均服从标准正态分布（也称独立同分布于标准正态分布），则这n个服从标准正态分布的随机变量的平方和
+Q=∑i=1nξ2i构成一新的随机变量，其卡方分布规律称为x^2,分布（chi-square distribution）
+
+```{r}
+#抛硬币
+chisq.test(c(42, 58), p = c(0.5, 0.5))
+#chisq.test(c(420, 580), p = c(0.5, 0.5))
+```
+
+
+R X C 列联表
+```{r}
+library(vcd)
+data("Arthritis")
+head(Arthritis)
+art <- xtabs(~ Treatment + Improved, data = Arthritis, subset = Sex=="Female")
+art
+prop.table(art)
+
+chisq.test(art, correct = TRUE)
+#因 n>=40,且所有格子理论频数>=5,故无需连续性校正	
+chisq.test(art, correct = FALSE)
+fisher.test(art)
+```
+
+
+2 by 2 case fisher test (when single cell less 5 )
+================================================================
+20世纪20年代末一个夏日的午后，在英国剑桥，一群大学教员，他们的妻子及一些客人围坐在室外的一张桌子周围喝下午茶。剑桥的统计学家Ronald Fisher也在其中。
+喝茶中，一位女士坚持称，将茶倒进牛奶里和将牛奶倒进茶里的味道是不同的。
+
+Fisher开始设计实验来检验这个命题。如果给这位女士一杯茶，即使她无法判断出区别，她也有50%的机会猜对茶的种类。于是他们做了个实验，冲多杯配方一致的奶茶，只是先倒奶和先倒茶的顺序不同。当我们一直继续给她递茶，样品量达到24杯的时候：
+
+1. 24杯茶的说服力有多少？我们是否应该相信她有分辨力呢？
+
+假设24杯茶她凭靠猜对的概率是x，那么她有（1-x）的概率是凭借能力分辨而不是靠猜的。而这个概率（1-x）就是传说中的置信度。如果置信度有95%，则代表我们有95%的把握相信她真的能分辨一杯奶茶。
+
+2. 如果在24杯中全答对了，我们可以说她具有判别能力，如果24杯中错了2杯呢？如果错了6杯呢？错多少杯为分界点的时候，才能说她具有判别能力？
+```{r}
+lady <- data.frame("drink"=rep(c("real_milk", "real_tea"), c(12,12)), "judgment"=rep(c("feel_milk", "feel_tea", "feel_milk", "feel_tea"), c(8, 4, 3, 9)))
+head(lady)
+lady <- xtabs(~ drink + judgment, data = lady)
+lady
+
+chisq.test(lady, correct = TRUE)
+chisq.test(lady, correct = FALSE)
+
+#choose
+fisher.test(lady, alternative = "two.sided")
+fisher.test(lady, alternative = "greater")
+```
+
+
+corrlation analyse: cor(x, method = c("pearson", "kendall", "spearman"))
+=====================================================
+```{r}
+data("mtcars")
+head(mtcars)
+res <- cor(mtcars)
+res
+res <- cor(t(mtcars))
+res
+
+library(Hmisc)
+res2 <- rcorr(as.matrix(mtcars))
+res2
+
+library(corrplot)
+corrplot(res, type = "upper", order = "hclust",
+tl.col = "black", tl.srt = 45)
+
+corrplot(res2$r, type="upper", order="hclust",
+p.mat = res2$P, sig.level = 0.01, insig = "blank")
+```
+
+
+linear regression
+=====================================================
+```{r}
+#对合金的强度与合金中碳含量之间的关系求回归方程
+x <- c(0.10,0.11,0.12,0.13,0.14,0.15,0.16,0.17,0.18,0.20,0.21,0.23)
+y <- c(42.0,43.5,45.0,45.5,45.0,47.5,49.0,53.0,50.0,55.0,55.0,60.0)
+cor(x,y)
+cor.test(x,y)
+plot(x,y)
+
+lm.sol<-lm(y ~ x)
+summary(lm.sol)   #回归总的概况
+
+opar <- par(mfrow = c(2,2))
+plot(lm.sol, las=1)
+par(opar)
+
+plot(y~x)
+abline(lm.sol)
+pre <- predict(lm.sol, data.frame(x=c(0.19, 0.22)), interval="prediction", level=0.95)
+points(c(0.19, 0.22), pre[,1], col="red")
+```
+
+
+linear regression and analysis of variance
+=====================================================
+```{r}
+## Annette Dobson (1990) "An Introduction to Generalized Linear Models".
+## Page 9: Plant Weight Data.
+data("PlantGrowth")
+lm.D9 <- lm(weight ~ group, data = PlantGrowth)
+summary(lm.D9)
+opar <- par(mfrow=c(2,2))
+plot(lm.D9, las = 1)      # Residuals, Fitted, ...
+par(opar)
+
+aov.D9 <- aov(weight ~ group, data = PlantGrowth)
+summary(aov.D9)
+plot(weight ~ group, data = PlantGrowth)
+```
+
+```{r}
+data("diabetes")
+diabetes <- as.data.frame(cbind(diabetes$y, diabetes$x))
+colnames(diabetes)[1] <- "y"
+fitDT <- lm(y~., diabetes)
+summary(fitDT)
+```
+逐步变量选择
+```{r}
+step(fitDT, direction="forward")
+step(fitDT, direction="backward")
+step(fitDT, direction="both")
+```
+
+
+具有较大R2的对较少自变量的模型应该是好的选择，较大的意味着有好的拟合效果，而较少的变量个数可减轻信息的收集和控制。
+```{r}
+library(leaps) #加载leaps包
+fitsubset <- regsubsets(y ~ ., diabetes) 
+result <- summary(fitsubset)
+data.frame(result$outmat,RSS=result$rss,R2=result$rsq,adjR2=result$adjr2,Cp=result$cp,BIC=result$bic) 
+```
+
+
+非线性最小二乘法----nls函数
+====================================================
+该方法使用线性函数来逼近非线性函数，并且通过不断迭代这个过程来得到参数的最优解，比如Michaelis-Menten模型
+
+```{r}
+set.seed(100)
+x <- seq(0, 50, 1)
+y <- ((runif(1, 10, 20)*x)/(runif(1, 0, 10)+x)) + rnorm(51, 0, 1)
+lmN <- lm(y~x)
+summary(lmN)
+cor(y, predict(lmN))
+plot(x, y)
+abline(lmN)
+
+# 对于一些简单的模型，nls函数可以自动找到合适的参数初值
+m <- nls(y ~ a*x/(b+x))
+summary(m)
+# 计算模型的拟合优度
+cor(y, predict(m))
+
+# 将结果可视化
+plot(x, y)
+lines(x, predict(m), lty = 2, col = "red", lwd = 3)
+```

@@ -1,0 +1,279 @@
+---
+title: "r-plot"
+author: "mason-YHY"
+date: "6/18/2020"
+output: html_document
+---
+
+heatmap
+===========================================================
+```{r}
+library(pheatmap)
+# Create test matrix
+test = matrix(rnorm(200), 20, 10)
+test[1:10, seq(1, 10, 2)] = test[1:10, seq(1, 10, 2)] + 3
+test[11:20, seq(2, 10, 2)] = test[11:20, seq(2, 10, 2)] + 2
+test[15:20, seq(2, 10, 2)] = test[15:20, seq(2, 10, 2)] + 4
+colnames(test) = paste("Test", 1:10, sep = "")
+rownames(test) = paste("Gene", 1:20, sep = "")
+test
+
+# Draw heatmaps
+pheatmap(test)
+pheatmap(test, kmeans_k = 2)
+pheatmap(test, scale = "row", clustering_distance_rows = "correlation")
+
+pheatmap(test, color = colorRampPalette(c("navy", "white", "firebrick3"))(50))
+
+pheatmap(test, cluster_row = FALSE)
+```
+
+```{r}
+# Show text within cells
+pheatmap(test, display_numbers = TRUE)
+pheatmap(test, display_numbers = TRUE, number_format = "%.1e")
+
+pheatmap(test, display_numbers = matrix(ifelse(test > 5, "*", ""), nrow(test)))
+
+pheatmap(test, cluster_row = FALSE, legend_breaks = -1:4, legend_labels = c("0",
+"1e-4", "1e-3", "1e-2", "1e-1", "1"))
+
+# Fix cell sizes and save to file with correct size
+pheatmap(test, cellwidth = 15, cellheight = 12, main = "Example heatmap")
+pheatmap(test, cellwidth = 15, cellheight = 12, fontsize = 8, filename = "test.pdf")
+```
+
+```{r}
+# Generate annotations for rows and columns
+annotation_col = data.frame(CellType = factor(rep(c("CT1", "CT2"), 5)), Time = 1:5)
+
+rownames(annotation_col) = paste("Test", 1:10, sep = "")
+
+annotation_row = data.frame(
+                    GeneClass = factor(rep(c("Path1", "Path2", "Path3"), c(10, 4, 6)))
+                )
+rownames(annotation_row) = paste("Gene", 1:20, sep = "")
+
+# Display row and color annotations
+pheatmap(test, annotation_col = annotation_col)
+pheatmap(test, annotation_col = annotation_col, annotation_legend = FALSE)
+pheatmap(test, annotation_col = annotation_col, annotation_row = annotation_row)
+```
+
+```{r}
+# Change angle of text in the columns
+pheatmap(test, annotation_col = annotation_col, annotation_row = annotation_row, angle_col = "45")
+pheatmap(test, annotation_col = annotation_col, angle_col = "0")
+
+# Specify colors
+ann_colors = list(
+    Time = c("white", "firebrick"),
+    CellType = c(CT1 = "#1B9E77", CT2 = "#D95F02"),
+    GeneClass = c(Path1 = "#7570B3", Path2 = "#E7298A", Path3 = "#66A61E")
+)
+
+pheatmap(test, annotation_col = annotation_col, annotation_colors = ann_colors, main = "Title")
+pheatmap(test, annotation_col = annotation_col, annotation_row = annotation_row, 
+         annotation_colors = ann_colors)
+pheatmap(test, annotation_col = annotation_col, annotation_colors = ann_colors[2]) 
+
+# Gaps in heatmaps
+pheatmap(test, annotation_col = annotation_col, cluster_rows = FALSE, gaps_row = c(10, 14))
+pheatmap(test, annotation_col = annotation_col, cluster_rows = FALSE, gaps_row = c(10, 14), 
+         cutree_col = 2)
+
+# Show custom strings as row/col names
+labels_row = c("", "", "", "", "", "", "", "", "", "", "", "", "", "", "", 
+"", "", "Il10", "Il15", "Il1b")
+
+pheatmap(test, annotation_col = annotation_col, labels_row = labels_row)
+
+```
+
+```{r}
+# Specifying clustering from distance matrix
+drows = dist(test, method = "minkowski")
+dcols = dist(t(test), method = "minkowski")
+pheatmap(test, clustering_distance_rows = drows, clustering_distance_cols = dcols)
+
+# Modify ordering of the clusters using clustering callback option
+callback = function(hc, mat){
+    sv = svd(t(mat))$v[,1]
+    dend = reorder(as.dendrogram(hc), wts = sv)
+    as.hclust(dend)
+}
+
+pheatmap(test, clustering_callback = callback)
+
+## Not run: 
+# Same using dendsort package
+library(dendsort)
+
+callback = function(hc, ...){dendsort(hc)}
+pheatmap(test, clustering_callback = callback)
+```
+
+
+ggbiplot
+===========================================================
+```{r}
+#library(devtools)
+#install_github("vqv/ggbiplot")
+library(ggbiplot)
+pca.data <- iris[, 1:4]
+pca.group <- iris[, 5]
+
+pca.out <- prcomp(pca.data, scale. = TRUE) 
+
+summary(pca.out)
+print(pca.out)
+pca_data <- predict(pca.out)
+
+ggbiplot(pca.out, groups = iris$Species, ellipse = T, var.axes = F)
+ggbiplot(pca.out, groups = iris$Species, ellipse = T, var.axes = T)
+
+pca_data <- as.data.frame(pca_data)
+pca_data$group <- iris$Species
+ggplot(data = pca_data, aes(x=PC1, y=PC2, color=group)) + geom_jitter()
+
+ggbiplot(pca.out, groups = iris$Species, ellipse = T, var.axes = F)
+```
+
+```{r}
+data(wine)
+wine.pca <- prcomp(wine, scale. = TRUE)
+print(ggbiplot(wine.pca, obs.scale = 1, var.scale = 1, groups = wine.class, ellipse = TRUE, circle = TRUE))
+```
+
+
+KM plot
+==============================================
+```{r}
+library("survival")
+library("survminer")
+fit<- survfit(Surv(time, status) ~ sex, data = lung)
+
+ggsurvplot(fit, data = lung)
+```
+
+ROC
+===================================================
+```{r}
+library(pROC)
+data(aSAH)
+rocobj <- roc(aSAH$outcome, aSAH$s100b)
+rocobj2 <- roc(aSAH$outcome, aSAH$wfns)
+rocobj3 <- roc(aSAH$outcome, aSAH$ndka)
+
+plot(rocobj)
+
+library(ggplot2)
+g <- ggroc(rocobj)
+g
+
+g + theme_minimal() + 
+  ggtitle("My ROC curve") + 
+  geom_segment(aes(x = 1, xend = 0, y = 0, yend = 1), color="grey", linetype="dashed")
+
+g2 <- ggroc(list(s100b=rocobj, wfns=rocobj2, ndka=rocobj3))
+g2
+```
+
+ggplot + geom_point 绘制气泡图
+=============================================
+```{r}
+library(tidyverse)
+library(gapminder)
+
+p <- gapminder %>%
+  filter(year==1977) %>%
+  ggplot(aes(
+    #log(gdpPercap), 
+    gdpPercap,
+    lifeExp, size = pop, color=continent)) +
+  geom_point(alpha = 0.7) + 
+#  geom_jitter(alpha = 0.7, width = 10) +
+  theme_bw()
+p
+
+library(ggExtra)
+p <- p + theme(legend.position="none")
+p1 <- ggMarginal(p, type="histogram", fill = "slateblue")
+p1
+```
+
+
+ggplot + geom_bar + coord_polar 类似南丁格尔图（玫瑰图）
+========================================================
+```{r}
+# library
+library(tidyverse)
+ 
+# Create dataset
+data <- data.frame(
+  individual=paste( "Mister ", seq(1,60), sep=""),
+  group=c( rep('A', 10), rep('B', 30), rep('C', 14), rep('D', 6)) ,
+  value=sample( seq(10,100), 60, replace=T)
+)
+
+ 
+# Set a number of 'empty bar' to add at the end of each group
+empty_bar <- 4
+to_add <- data.frame( matrix(NA, empty_bar*nlevels(data$group), ncol(data)) )
+colnames(to_add) <- colnames(data)
+to_add$group <- rep(levels(data$group), each=empty_bar)
+data <- rbind(data, to_add)
+data <- data %>% arrange(group)
+data$id <- seq(1, nrow(data))
+ 
+# Get the name and the y position of each label
+label_data <- data
+number_of_bar <- nrow(label_data)
+angle <- 90 - 360 * (label_data$id-0.5) /number_of_bar     # I substract 0.5 because the letter must have the angle of the center of the bars. Not extreme right(1) or extreme left (0)
+label_data$hjust <- ifelse( angle < -90, 1, 0)
+label_data$angle <- ifelse(angle < -90, angle+180, angle)
+ 
+# Make the plot
+p <- ggplot(data, aes(x=as.factor(id), y=value, fill=group)) +       # Note that id is a factor. If x is numeric, there is some space between the first bar
+  geom_bar(stat="identity", alpha=0.5, position = "stack") +
+  ylim(-100,120) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    panel.grid = element_blank(),
+    plot.margin = unit(rep(-1,4), "cm") 
+  ) +
+  coord_polar() + 
+  geom_text(data=label_data, aes(x=id, y=value+10, label=individual, hjust=hjust), color="black", fontface="bold",alpha=0.6, size=2.5, angle= label_data$angle, inherit.aes = FALSE ) 
+ 
+p
+```
+
+
+ggplot + geom_violin + geom_boxplot
+===========================================
+```{r}
+library(tidyverse)
+
+# create a dataset
+data <- data.frame(
+  name=c( rep("A",500), rep("B",500), rep("B",500), rep("C",20), rep('D', 100)  ),
+  value=c( rnorm(500, 10, 5), rnorm(500, 13, 1), rnorm(500, 18, 1), rnorm(20, 25, 4), rnorm(100, 12, 1) )
+)
+
+p <- ggplot(data, aes(x=name, y=value, fill=name)) +
+    geom_violin(width=1.4) +
+    geom_boxplot(width=0.1, color="grey", alpha=0.2) +
+#    scale_fill_viridis(discrete = TRUE) +
+    theme_ipsum() +
+    theme(
+      legend.position="none",
+      plot.title = element_text(size=11)
+    ) +
+    ggtitle("A Violin wrapping a boxplot") +
+    xlab("")
+p
+```
+

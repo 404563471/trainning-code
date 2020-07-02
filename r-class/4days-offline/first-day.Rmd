@@ -1,0 +1,433 @@
+---
+title: "R leason of the First Day"
+author: "Mason-YHY"
+output: html_document
+email: yuanhy@bcc.ac.cn
+---
+
+## Example 1.1
+
+Data creating for vector
+=====================================================
+```{r}
+print("date")
+
+a <- c(1, 2, 3, 4, 5)
+a
+a <- 1:5
+a <- seq(1,5)
+
+a.2 <- seq(1,5,2)
+a.2
+a.3 <- rep(2,5)
+a.3
+
+b <- c("one","two","three")
+b
+
+c(a,b)
+```
+
+Data creating for matrix and array
+========================================================
+```{r}
+y <- matrix(1:20, nrow=5, ncol=4)
+y
+
+array(1:24, c(2, 3, 4))
+```
+
+
+Data creating for data.frame and list
+========================================================
+```{r}
+patientID <- c(1,2,3,4)
+age <- c(25,34,28,52)
+diabetes <- c("Type1","Type2","Type1","Type1")
+status <- c("Poor","Improved","Excellent","Poor")
+
+patientData <- data.frame(patientID,age,diabetes,status)
+patientData
+
+list(patientID, age, diabetes, status)
+unlist(list(patientID, age, diabetes, status))
+```
+
+
+## Example 1.2
+
+Test and transform of object type 
+========================================================
+```{r}
+is.numeric(a)
+is.numeric(b)
+
+is.numeric(as.numeric("123"))
+
+as.matrix(patientData)
+
+```
+
+Access an object's attributes
+========================================================
+```{r}
+attributes(patientData)
+names(patientData)
+class(patientData)
+rownames(patientData)
+
+length(objects())
+```
+
+
+## Example 2.1
+
+Data index for vector
+========================================================
+```{r}
+a.vector <- c(0.04,0.65,0.03,0.94,0.05)
+a.vector[1]
+a.vector[c(1)] 
+
+a.vector[10]
+a.vector[-1]
+```
+
+
+Data index for data.frame
+=========================================================
+```{r}
+patientData[1,1]
+patientData[1,]
+patientData[,1]
+
+# use $colname to index 
+patientData$patientID
+patientData$patientID[1]
+```
+
+Logical operation
+========================================================
+```{r}
+TRUE | FALSE
+TRUE & FALSE
+!TRUE
+```
+
+Index data by logical
+========================================================
+```{r}
+a.vector <= 0.05
+a.vector[a.vector <= 0.05]
+a.vector[a.vector<=0.05 & a.vector>0]
+#a.vector[0<a.vector<=0.05] 
+```
+
+## Expansion content 1
+
+Think about vector[0] = what?
+=========================================================
+```{r}
+#The numeric(0) just means that the result is a numeric vector with no elements.
+a.vector[0]
+#logical(0) is same
+c(T,T,T)[0]
+```
+
+Creating random sequence by data index
+========================================================
+```{r}
+aa <- rep(c(1, 2, 3), c(10, 15, 5))
+aa
+set.seed(100)
+aa[sample(1:30, 30)]
+```
+
+
+## Example 2.2
+
+Combine R Objects by Rows or Columns
+=========================================================
+```{r}
+m <- cbind(1, 1:7) # the '1' (= shorter vector) is recycled
+m
+m <- cbind(m, 8:14)[, c(1, 3, 2)] # insert a column
+m
+
+dd <- 10
+rbind(1:4, c = 2, "a++" = 10, dd, deparse.level = 0) # middle 2 rownames
+rbind(1:4, c = 2, "a++" = 10, dd, deparse.level = 1) # 3 rownames (default)
+rbind(1:4, c = 2, "a++" = 10, dd, deparse.level = 2) # 4 rownames
+```
+
+
+Data Transposition
+=========================================================
+```{r}
+a.4 <- matrix(1:30, 5, 6)
+c(nrow(a.4), ncol(a.4))
+dim(a.4)
+
+ta.4 <- t(a.4)
+dim(ta.4)
+```
+
+
+## Example 2.3
+
+Set Operations
+=========================================================
+```{r}
+group1 <- letters[1:10]
+group2 <- letters[7:14]
+
+union(group1, group2)
+intersect(group1, group2)
+
+setdiff(group1, group2)
+setdiff(group2, group1)
+
+setequal(group1, group2)
+is.element("a", group1)
+
+group3 <- letters[1:8]
+all(group3 %in% group1)
+
+Reduce(intersect, list(group1, group2, group3))
+Reduce(setdiff, list(group1, group2, group3), right = T)
+Reduce(setdiff, list(group1, group2, group3), right = F)
+```
+
+Data index by set operations
+================================================
+```{r}
+group1 %in% group2
+match(group1, group2)
+group2 %in% group1
+match(group2, group1)
+
+group1[group1 %in% group2]
+group2[match(group1, group2, nomatch = 0)]
+
+all(group1 %in% group2)
+```
+
+
+## Example 2.4
+
+Data join
+=========================================================
+```{r}
+df1 <- data.frame(CustomerId = c(1:6), Product = c(rep("Toaster", 3), rep("Radio", 3)))
+df1
+df2 <- data.frame(CustomerId = c(2, 4, 6), State = c(rep("Alabama", 2), rep("Ohio", 1)))
+df2
+```
+
+Inner join & Outer join
+=========================================================
+```{r}
+merge(df1, df2)
+merge(x = df1, y = df2, by = "CustomerId", all = TRUE)
+```
+
+Left outer & Right outer & Cross join
+=========================================================
+```{r}
+merge(x = df1, y = df2, by = "CustomerId", all.x = TRUE)
+merge(x = df1, y = df2, by = "CustomerId", all.y = TRUE)
+
+merge(x = df1, y = df2, by = NULL)
+```
+
+dplyr package for data join
+========================================================
+```{r}
+x<-data.frame(Name=c("John","Paul","George","Ringo","Stuart","Pete"),instrument=c("guitar","bass","guitar","drums","bass","drums"))
+y<-data.frame(name=c("John","Paul","George","Ringo","Brian"),band=c("TRUE","TRUE","TRUE","TRUE","FALSE"))
+
+
+library(dplyr)
+data1<-inner_join(x,y,by=c("Name"="name"))
+data2<-left_join(x,y,by=c("Name"="name"))
+data3<-right_join(x,y,by=c("Name"="name"))
+data4<-full_join(x,y,by=c("Name"="name"))
+
+#data5<-semi_join(x,y,by=c("Name"="name"))
+#data6<-anti_join(x,y)
+```
+
+Example 3.1
+
+apply
+========================================================
+When you want to apply a function to the rows or columns of a matrix
+```{r}
+M1 <- matrix(1:16, 4, 4)
+M1
+# apply min to rows
+apply(M1, 1, min)
+# apply max to columns
+apply(M1, 2, max)
+
+# apply log transfer to each elements, to know the vector compute
+apply(M1, c(1, 2), log)
+apply(M1, 1, log)
+
+log(M1)
+
+# the same as for 
+M1.for <- matrix(,4,4)
+for (i in 1:length(M1)) {
+    M1.for[i] <- log(M1[i])
+}
+M1.for
+```
+
+CPU TIME: apply VS for (Care for big memory required!!!!!!!!!)
+========================================================================
+```{r}
+#M1.big <- matrix(rnorm(1e+8, mean = 10, sd = 1),1e+4, 1e+4)
+#format(object.size(M1.big), units = "MB")
+
+#system.time(apply(M1.big, 1, log))
+## user  system elapsed 
+## 5.587   0.754   6.340
+
+#M1.for <- matrix(,1e+4,1e+3)
+#system.time(for (i in 1:length(M1.big)) M1.for[i] <- log(M1.big[i]))
+## user  system elapsed 
+## 34.052   3.313  37.355 
+```
+
+```{r}
+M2 <- array( seq(32), dim = c(4,4,2))
+# Apply sum across each M[*, , ] - i.e Sum across 2nd and 3rd dimension
+apply(M2, 1, sum)
+# Result is one-dimensional
+
+# Apply sum across each M[*, *, ] - i.e Sum across 3rd dimension
+apply(M2, c(1,2), sum)
+
+M3 <- array( seq(32), dim = c(4,2,2,2))
+apply(M3, c(1,2,3), sum)
+```
+
+lapply
+=========================================================
+When you want to apply a function to each element of a list in turn and get a list back.
+```{r}
+x <- list(a = 1, b = 1:3, c = 10:100) 
+lapply(x, FUN = length) 
+lapply(x, FUN = sum)
+```
+
+sapply
+=========================================================
+When you want to apply a function to each element of a list in turn, but you want a vector back, rather than a list.
+```{r}
+x <- list(a = 1, b = 1:3, c = 10:100)
+# Compare with above; a named vector, not a list 
+sapply(x, FUN = length)  
+sapply(x, FUN = sum)
+
+attributes(sapply(x, FUN = sum))
+```
+
+Advanced uses of sapply
+========================================================
+```{r}
+sapply(1:5,function(x) rnorm(3,x))
+sapply(1:5,function(x) matrix(x,2,2))
+sapply(1:5,function(x) matrix(x,2,2), simplify = "array")
+```
+
+vapply
+========================================================
+When you want to use sapply but perhaps need to squeeze some more speed out of your code.
+```{r}
+x <- list(a = 1, b = 1:3, c = 10:100)
+vapply(x, FUN = length, FUN.VALUE = 0L) 
+```
+
+mapply
+========================================================
+For when you have several data structures (e.g. vectors, lists) and you want to apply a function to the 1st elements of each, and then the 2nd elements of each, etc., coercing the result to a vector/array as in sapply.
+```{r}
+mapply(sum, 1:5, 1:5, 1:5) 
+mapply(sum, matrix(1:9, 3, 3), matrix(2:10, 3, 3), matrix(3:11, 3, 3))
+mapply(sum, 1:5, 1:5, 1:6)
+```
+
+rapply
+=========================================================
+For when you want to apply a function to each element of a nested list structure
+```{r}
+# Append ! to string, otherwise increment
+myFun <- function(x){
+    if(is.character(x)){
+      return(paste0(x,"!"))
+    }
+    else{
+      return(x + 1)
+    }
+}
+
+#A nested list structure
+l <- list(a = list(a1 = "Boo", b1 = 2, c1 = "Eeek"), 
+          b = 3, c = "Yikes", 
+          d = list(a2 = 1, b2 = list(a3 = "Hey", b3 = 5)))
+
+
+# Result is named vector, coerced to character          
+rapply(l, myFun)
+
+# Result is a nested list like l, with values altered
+rapply(l, myFun, how="replace")
+```
+
+parallel
+========================================================
+```{r}
+library(parallel)
+
+# Calculate the number of cores
+#no_cores <- detectCores() - 1
+
+# Initiate cluster
+#cl <- makeCluster(no_cores)
+#cl <- makeCluster(20)
+#system.time(sapply(1:10000, function(x) rnorm(10000,x)))
+#system.time(parSapply(cl, 1:10000, FUN = function(x) rnorm(10000,x)))
+#stopCluster(cl)
+```
+
+```{r}
+calcu <- function(a,b,what="+"){
+    #ifelse(what=="+", a+b, a-b)
+  switch (what,
+    "+" = a+b,
+    "-" = a-b,
+    "*" = a*b,
+    "/" = a/b
+  )
+}
+calcu(1,3,"-")
+
+#for (i in 1:5) print(1: i)
+test <- function(x) for (i in 1:x) print(1: i)
+test(10)
+```
+
+Question: f(x)=?
+=========================================================
+```{r}
+x <- 2
+y <- 3
+z <- 4
+f <- function(w) {
+      z <- 2
+      x <- w *y *z
+      return(x)
+}
+```

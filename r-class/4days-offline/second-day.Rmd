@@ -1,0 +1,610 @@
+---
+title: "R-leason-second-day"
+author: "Mason-YHY"
+output: html_document
+email: yuanhy@bcc.ac.cn
+---
+
+load data
+==========================================================
+```{r}
+load_any_file <- function(filename) {
+    data <- read.csv(filename, sep="\t")
+    sep <- "\t"
+    header <- TRUE
+    
+    csv <- read.csv(filename)
+    if (length(names(csv)) > length(names(data))) {
+      data <- csv
+      sep <- ","
+    }
+    remove(csv)
+    
+    no_header_data <- read.csv(filename, sep=sep, header = FALSE)
+    types_without_header <- sapply(no_header_data, class)
+    types_with_header <- sapply(data, class)
+    if (identical(unname(types_with_header),unname(types_without_header))) {
+      header <- FALSE
+      data <- read.csv(filename, sep=sep, header = header)
+    }
+    remove(no_header_data)
+    return(data)
+}
+```
+
+==========================================================
+```{r}
+plot.data <- array(1:32, c(4,4,2))
+plot(plot.data)
+
+plot.data2 <- array(32:63, c(4,4,2))
+plot(plot.data2)
+```
+
+boxplot()
+===========================================================
+```{r}
+x1 <- c(2,4,3,2,4,7,7,2,2,5,4)
+x2 <- c(5,6,8,5,10,7,12,12,6,6)
+x3 <- c(7,11,6,6,7,9,5,5,10,6,3,10)
+boxplot(x1,x2,x3)
+```
+***
+```{r}
+boxplot(count ~ spray, data = InsectSprays, col = "lightgray")
+```
+
+pie()
+===========================================================
+```{r}
+cars <- c(1, 3, 6, 4, 9) 
+colors <- rainbow(length(cars))
+labels <- c("Mon","Tue","Wed","Thu","Fri")
+labels <- paste(labels, round(cars/sum(cars) * 100, 1), sep="-") 
+labels <- paste(labels, "%", sep="") 
+pie(cars, main="Cars", col=colors, labels=labels, cex=0.8)
+```
+
+plot() step by step 
+===========================================================
+```{r}
+# auto complete
+autos_data <- read.table("./plot_data/autos.txt", header=T, sep="\t") 
+max_y <- max(autos_data) 
+plot_colors <- c("blue","red","forestgreen") 
+plot(autos_data$cars, type="o", col=plot_colors[1], ylim=c(0,max_y), axes=FALSE, ann=FALSE)
+axis(1, at=1:5, lab=c("Mon", "Tue", "Wed", "Thu", "Fri"))
+axis(2, at=c(0,4,8,12))
+box()
+lines(autos_data$trucks, type="o", pch=22, lty=2, col=plot_colors[2])
+lines(autos_data$suvs, type="o", pch=23, 
+lty=3, col=plot_colors[3])
+title(main=, col.main="red", font.main=4)
+title(xlab= "Days", col.lab=rgb(0,0.5,0))
+title(ylab= "Total", col.lab=rgb(0,0.5,0))
+legend(1, max_y, names(autos_data), cex=0.8, col=plot_colors, pch=21:23, lty=1:3)
+```
+
+Barplot with Error Bar
+===========================================================
+```{r}
+data <- read.table("./plot_data/even_adiv.txt", header=T, sep="\t")
+data <- data.frame(data[1:6,2],data[7:12,2])
+names(data) <- c("A","B")
+M <- apply(data, 2, mean)
+SD <- apply(data, 2, sd)
+n <- dim(data)[1]
+SE <- 5 * SD/sqrt(n)
+ymax <- max(M+SE)*1.1
+barX <- barplot(M, names.arg=names(data), col="royalblue", ylim=c(0,ymax), ylab="Value")
+box()
+arrows(barX, M+SE, barX, M-SE, angle=90, code=3, length=0.2)
+```
+
+Venn diagram
+===================================================
+```{r}
+library(VennDiagram)
+library(grid)
+otu<-read.table("./plot_data/otu_data.txt", header=T)
+data <- list(A=otu$OTU.ID[otu$A>0],
+B=otu$OTU.ID[otu$B>0], C=otu$OTU.ID[otu$C>0],
+D=otu$OTU.ID[otu$D>0], E=otu$OTU.ID[otu$E>0])
+venn.diagram(data,fill=c("red","green","blue","orange", "pink"),alpha=c(0.5,0.5,0.5,0.5,0.5),filename = "venn.tiff")
+```
+
+HeatMap--test1
+====================================================
+```{r}
+library("pheatmap")
+data<-read.table("./plot_data/otu_top80.txt",header=T,sep="\t",row.names=1)
+x  <- as.matrix(data)
+
+pheatmap(x, filename = NA, cluster_rows = T, cluster_cols = T, treeheight_row = 20, treeheight_col = 20, cellheight = 20, cellwidth = 20, fontsize=7, fontsize_col=8, fontsize_row=8,border_color = "NA", color = colorRampPalette(c("#1409a4", "#81ebe5", "#3df134", "#f4f70c","#fb080e"))(50))
+
+pheatmap(log10(x+1), filename = NA, cluster_rows = T, cluster_cols = T, treeheight_row = 20, treeheight_col = 20, cellheight = 20, cellwidth = 20, fontsize=7, fontsize_col=8, fontsize_row=8,border_color = "NA", color = colorRampPalette(c("#1409a4", "#81ebe5", "#3df134", "#f4f70c","#fb080e"))(50))
+
+#pheatmap(x, filename = NA, cluster_rows = T, cluster_cols = T, treeheight_row = 20, treeheight_col = 20, cellheight = 20, cellwidth = 20, fontsize=7, fontsize_col=8, fontsize_row=8,border_color = "NA", color = colorRampPalette(c("#1409a4", "#81ebe5", "#3df134", "#f4f70c","#fb080e"))(50), scale = "row")
+```
+
+HeatMap--test2
+====================================================
+```{r}
+expData <- read.table("plot_data/matrix.txt", header = TRUE, row.names = 1, sep = "\t") 
+genes <- read.table("plot_data/deg.txt")
+genes <- as.character(as.matrix(genes))
+expData <- expData[genes, ]
+pheatmap(expData,scale = "row",
+    color = colorRampPalette(c("navy", "white", "firebrick3"))(50), cutree_rows = 2 )
+```
+
+Survival analysis
+=====================================================
+```{r}
+library(survival)
+clinical<-read.table("plot_data/KM_plot.txt") 
+y <- Surv(clinical$OS, clinical$vital_status)                  
+x <- survfit(y~clinical$Group)                     
+survdiff(y~ clinical$Group, data=clinical)     
+
+plot(x, lty = c('solid', 'dashed'), col=c('black','blue'),  
+     xlab='survival time in days', ylab='survival probabilities') 
+legend('topright', c('High','Low'), lty=c('solid','dashed'), col=c('black','blue'))   
+coxmodel <- coxph(y~ Group + age + stage, data = clinical)
+summary(coxmodel)
+```
+
+
+
+
+Top downloaded packages from the RStudio CRAN mirror
+=====================================================
+```{r}
+library(cranlogs)
+cran_top_downloads("last-week")
+```
+
+
+Data creating for factor 
+======================================================
+```{r}
+#make a factor and specified the order of levels 
+factor(c("High","Low","High","Medium","Low"))
+factor(c("High","Low","High","Medium","Low"), levels = c("High", "Medium", "Low"))
+
+#make factor to be ordered
+factor(c("High","Low","High","Medium","Low"), levels = c("High", "Medium", "Low"), ordered = TRUE)
+
+#the levels of ordered factor is set to be sorted into increasing order
+factor(c("High","Low","High","Medium","Low"), levels = c("Low", "Medium", "High"), ordered = TRUE)
+
+#use labels to change character of levels
+data.factor <- c(1,2,2,3,1,2,3,3,1,2,3,3,1)
+factor(data.factor, labels = c("I", "II", "III"))
+
+### factor and recode
+test.scale <- runif(100,0,100)
+qa <- quantile(test.scale, c(0,0.2,0.4,0.6,0.8,1.0))
+cut(test.scale,breaks=qa,labels=c("0%~20%","20%~40%","40%~60%","60%~80%","80%~100%"),include.lowest=TRUE,ordered=TRUE)
+```
+
+## Example 2.4
+
+Data reshape--long to wide
+========================================================
+```{r}
+head(airquality)
+```
+
+reshape2 packages
+========================================================
+```{r}
+library(reshape2)
+head(melt(airquality, id.vars=c("Month", "Day")))
+head(melt(airquality, id.vars=c("Month", "Day"), variable.name = "Oz-Sol-Wind-Temp"))
+
+aqm <- melt(airquality, id=c("Month", "Day"), na.rm=TRUE)
+head(dcast(aqm, Day ~ variable+Month))
+```
+
+tidyr packages
+========================================================
+```{r}
+library(tidyr)
+#head(gather(airquality, key = Oz-Sol-Wind-Temp, value = value, Ozone:Temp))
+#head(gather(airquality, key = Oz-Sol-Wind-Temp, value = value, -Month:-Day))
+
+#head(spread(aqm, key = variable, value = value))
+
+aqm.time <- unite(airquality, col = Time, Month:Day, sep = "-")
+head(aqm.time)
+head(separate(aqm.time, col = Time, into = c("Month", "Day"), sep = "-"))
+```
+
+qplot--point
+===================================================
+```{r}
+library(ggplot2)
+library(dplyr)
+tbl_df(mtcars)
+
+mtcars$cyl <- as.factor(mtcars$cyl)
+qplot(mpg, wt, data = mtcars)
+```
+
+geom_** list
+=================================================
+```{r}
+ls("package:ggplot2", pattern="^geom_.+")
+```
+
+## One-dimensional continuous variable 
+
+ggplot--geom_histogram
+===================================================
+```{r}
+ggplot(diamonds, aes(carat)) +
+  geom_histogram()
+```
+
+ggplot--geom_density
+===================================================
+```{r}
+ggplot(diamonds, aes(carat)) +
+  geom_density()
+```
+
+## One-dimensional discrete variable
+
+ggplot--geom_bar
+===================================================
+```{r}
+ggplot(diamonds, aes(color)) + geom_bar()
+
+ggplot(diamonds, aes(color)) + geom_bar(aes(weight = cut))
+```
+
+ggplot--geom_bin2d
+==================================================
+```{r}
+ggplot(diamonds, aes(carat, price)) + geom_bin2d()
+```
+
+ggplot--geom_bin2d
+==================================================
+```{r}
+ggplot(diamonds, aes(carat, price)) + geom_jitter(alpha=0.1) + geom_density_2d()
+```
+
+ggplot--geom_jitter(2D)
+=====================================================
+```{r}
+ggplot(diamonds, aes(cut, color)) +
+  geom_jitter(aes(color = cut), size = 0.5)
+```
+
+ggplot--geom_point
+==================================================
+```{r}
+ggplot(data = diamonds, aes(x=carat, y=price)) +
+  geom_point(aes(alpha=0.05))
+
+ggplot(data = diamonds, aes(x=carat, y=price)) +
+  geom_jitter(aes(alpha=0.05))
+```
+
+## geom_ or stat_
+
+stat_**
+==================================================
+```{r}
+ls("package:ggplot2", pattern="^stat_.+") 
+```
+
+ggplot--geom_point + geom_smooth or stat_smooth
+==================================================
+```{r}
+ggplot(mtcars, aes(x = mpg, y = wt, col = cyl)) +
+geom_point() +
+geom_smooth(method = "lm", se = FALSE) +
+geom_smooth(aes(group = 1), # group=1 mean draw one line!
+            method = "lm", se = FALSE, linetype = 2)
+
+mtcars$cyl <- factor(mtcars$cyl)
+
+ggplot(mtcars, aes(x = mpg, y = wt, col = cyl)) +
+geom_point() +
+stat_smooth(method = "lm", se = F) +
+stat_smooth(method = "loess", aes(group = 1), 
+se = F, col = "black", span = 0.7)
+```
+
+ggplot--geom_bar or stat_count
+==================================================
+```{r}
+#the height of the bar proportional to the number of cases in each group
+ggplot(mpg,aes(x=class)) + geom_bar()
+ggplot(mpg,aes(x=class)) + stat_count()
+
+# the heights of the bars to represent values in the data
+ggplot(mpg,aes(x=class,y=displ)) + geom_bar(stat="identity")
+ggplot(mpg,aes(x=class,y=displ)) + geom_col()
+```
+
+ggplot--position
+==================================================
+```{r}
+ggplot(mpg,aes(x=class,y=displ)) + geom_bar(stat="identity")
+ggplot(mpg,aes(x=class,y=displ)) + stat_identity(geom="bar")
+ggplot(mpg,aes(x=class,y=displ)) + stat_identity(geom="bar",position="stack")
+
+p <- ggplot(data=mpg,aes(x=class,fill=factor(year)))
+p + geom_bar(position='dodge')
+p + geom_bar(position='stack')
+p + geom_bar(position='fill')
+p + geom_bar(position='identity',alpha=0.3)
+```
+
+ggplot--geom_text + position_jitter
+==================================================
+```{r}
+ggplot(data = mtcars, aes(x=mpg, y=wt)) +
+  geom_text(aes(label=rownames(mtcars)), position = "jitter")
+
+ggplot(data = mtcars, aes(x=mpg, y=wt)) +
+  geom_text(aes(label=rownames(mtcars)), position = position_jitter(width = 0.1, height = 1, seed = 12))
+```
+
+
+## the layer
+
+ggplot--geom_boxplot + geom_jitter
+===================================================
+```{r}
+ggplot(data = mtcars, aes(x=factor(cyl), y=wt)) +
+  geom_boxplot(fill=c("red", "green", "blue")) + geom_jitter()
+```
+
+ggplot--geom_violin + geom_boxplot
+===================================================
+```{r}
+ggplot(data = mtcars, aes(x=cyl, y=wt, fill=cyl)) +
+  geom_violin() + geom_boxplot(width=.1) 
+```
+
+ggplot --geom_bar + geom_line + geom_point
+=====================================================
+```{r}
+set.seed(100)
+datax <- data.frame(x=1:10, y=rnorm(10)+1:10)
+ggplot(datax, aes(x=factor(x), y=y)) + xlab("x") + geom_bar(stat="identity") +
+  geom_line(aes(group=1), size=2) + geom_point(color="red")
+```
+
+ggplot --geom_bar + geom_errorbar
+====================================================
+```{r}
+library(Rmisc)
+tg <- ToothGrowth
+tgc <- summarySE(tg, measurevar="len", groupvars=c("supp","dose"))
+
+tgc2 <- tgc
+tgc2$dose <- factor(tgc2$dose)
+ 
+# Error bars represent standard error of the mean
+ggplot(tgc2, aes(x=dose, y=len, fill=supp)) + 
+    geom_bar(position=position_dodge(), stat="identity") +
+    geom_errorbar(aes(ymin=len-se, ymax=len+se),
+                  width=.2, 
+                  position=position_dodge(.9))
+
+ggplot() + 
+    geom_bar(tgc2[tgc2$supp=="OJ",], mapping = aes(x=dose, y=len), stat="identity", fill="blue") +
+    geom_bar(tgc2[tgc2$supp=="VC",], mapping = aes(x=dose, y=len), stat="identity", fill="red", width = 0.2) +
+    geom_errorbar(data = tgc2, mapping = aes(x=dose, ymin=len-se, ymax=len+se),
+                  width=.2,  
+                  position=position_dodge(.9))
+```
+
+
+scale_**
+=====================================================
+```{r}
+scalex <- ls("package:ggplot2", pattern = "^scale.+")
+scalex <- scalex[grep("([^_]+_){2}.+", scalex)] 
+table(gsub("(([^_]+_){2}).+", "\\1***", scalex)) 
+```
+
+
+ggplot--geom_map
+======================================================
+```{r}
+library(maps)
+library(ggmap)
+head(USArrests)
+crimes <- data.frame(state=tolower(rownames(USArrests)), USArrests)
+head(crimes)
+
+## reshape data for ggplot
+library(reshape2)
+crimesm <- melt(crimes, id="state", variable.name = "criminal.type")
+head(crimesm)
+
+## turn state data from the maps package in to a data frame suitable for plotting with ggplot2
+state.mapdata <- map_data("state") 
+
+map.plot <- ggplot(crimesm, aes(map_id=state)) + 
+              geom_map(aes(fill=value), map=state.mapdata) +
+              expand_limits(x=state.mapdata$long, y=state.mapdata$lat) +
+              facet_wrap(~ criminal.type)
+map.plot
+
+
+crimesm_log <- crimesm 
+crimesm_log$value <- log(crimesm_log$value)
+map.plot.log <- ggplot(crimesm_log, aes(map_id=state)) + 
+                  geom_map(aes(fill=value), map = state.mapdata) +
+                  expand_limits(x=state.mapdata$long, y=state.mapdata$lat) + 
+                  facet_wrap(~ criminal.type)
+map.plot.log
+
+
+map.plot.clearn <- map.plot.log + 
+                    theme_classic() + 
+                    theme(panel.grid = element_blank(), 
+                            axis.text = element_blank(),
+                            axis.ticks = element_blank(),
+                            axis.title = element_blank(),
+                            panel.border = element_blank(),
+                            legend.position = "none")
+map.plot.clearn
+```
+
+plot map with pint
+=========================================================
+```{r}
+library(sp)
+library(stringr)
+library(maps)
+#zta<-read.csv("plot_data/mapdata.csv", header=T, stringsAsFactors = F)##
+#Lat<-zta$latitude
+#Long<-zta$longitude
+
+#head(Long)
+#head(state.center$y)
+#dd2dms(state.center$y[1:5], NS=TRUE)
+
+clean.data.latitude <- function(x){
+  x <- str_replace(x, "°", "d")
+  x <- str_replace(x, "º", "d")
+  x <- str_replace(x, "′", "'")
+  x <- str_replace(x, " ", "")
+  return(x)
+}
+trans.latitude <- function(x){
+  x <- clean.data.latitude(x)
+  x <- as.numeric(char2dms(x))
+  return(x)
+}
+
+#Lat.change <- trans.latitude(Lat)
+#Long.change <- trans.latitude(Long)
+
+#map("world")
+#points(Long.change, Lat.change, pch=1, cex=.8, col="blue")
+#library(baidumap)
+library(ggmap)
+#baidu.beida <- getBaiduMap("北京大学")
+#ggmap(baidu.beida)
+```
+
+##ggmuller
+===========================================================================
+evolutionary dynamics as stacked area plots that combine information about frequency dynamics and phylogeny,
+```{r}
+#library(ggmuller)
+#vignette("ggmuller")
+#vignette(all = TRUE)
+#Muller_df <- get_Muller_df(example_edges, example_pop_df)
+#Muller_plot(Muller_df)
+
+# Plots of this type are commonly used to show how evolutionary dynamics respond to environmental change, such as in a tumour during chemotherapy
+#Muller_pop_plot(Muller_df)
+```
+
+Compare with plot() step by step 
+=========================================================
+```{r}
+#autos_data
+days.data <- factor(c("Mon","Tue","Wed","Thu","Fri"), levels = c("Mon","Tue","Wed","Thu","Fri"))
+
+library(reshape2)
+#autos_data.plot <- melt(autos_data, variable.name = "varname") 
+#autos_data.plot$days <- days.data 
+#compare.plot <- ggplot(autos_data.plot, aes(x=days, y=value, group=varname, color = varname, shape= data.factorvarname)) +
+#geom_line() + geom_point()
+
+#compare.plot
+```
+
+Interactive for editing ggplot layers and themes by ggedit
+==========================================================
+```{r}
+library(ggedit)
+#ggedit(compare.plot)
+test.multlyer <- ggplot(data = mtcars, aes(x=mpg, y=wt)) +
+  geom_point() + geom_smooth(method = "loess")
+
+#ggedit(test.multlyer)
+```
+
+
+
+
+Dashboard plot
+==========================================================
+```{r}
+library(customLayout)
+lay <- lay_new(mat = matrix(1:4, ncol = 2),  widths = c(3, 2),  heights = c(2, 1))
+lay_show(lay)
+
+par(mar = c(3, 2, 2, 1)) 
+lay  <- lay_new(  matrix(1:4, nc = 2),  widths = c(3, 2),  heights = c(2, 1)) 
+lay2 <- lay_new(matrix(1:3)) 
+cl <- lay_bind_col(lay, lay2, widths = c(3, 1)) 
+lay_show(cl)
+
+lay_set(cl) # initialize drawing area
+set.seed(123) 
+plot(1:100 + rnorm(100)) 
+plot(rnorm(100), type = "l") 
+hist(rnorm(500))
+acf(rnorm(100)) 
+pie(c(3, 4, 6), col = 2:4) 
+pie(c(3, 2, 7), col = 2:4 + 3) 
+pie(c(5, 4, 2), col = 2:4 + 6)
+
+library(ggplot2)
+library(gridExtra) 
+lay  <- lay_new( matrix(1:2, ncol = 1)) 
+lay2 <- lay_new(matrix(1:3)) 
+cl   <- lay_bind_col(lay, lay2, widths = c(3, 1)) 
+
+cuts <- sort(unique(diamonds[["cut"]]),decreasing = TRUE) 
+make_cut_plot <- function(cut) {
+  dd <- diamonds[diamonds[["cut"]] == cut, ]  
+  ggplot(dd) + geom_point(aes(carat, price)) + facet_wrap("cut") 
+} 
+plots <- lapply(cuts, make_cut_plot) 
+
+lay_grid(plots, cl)
+```
+
+Interactive plot for ggplot 
+==========================================================
+```{r}
+library(plotly)
+plot_ly(economics, x = ~pop, type = "histogram")
+
+#map.activeplot <- ggplotly(map.plot)
+#map.activeplot
+```
+
+Interactive data.frame
+==========================================================
+```{r}
+library(DT)
+datatable(iris)
+```
+
+
+word plot
+===========================================================
+```{r}
+library(wordcloud2)
+wordcloud2(demoFreq, size = 1, shape = 'cardioid') + WCtheme(2)
+
+picture.word <- system.file("examples/t.png", package = "wordcloud2")
+#wordcloud2(demoFreq, figPath = picture.word)
+```
+

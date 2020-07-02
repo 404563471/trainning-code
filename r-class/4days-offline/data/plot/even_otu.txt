@@ -1,0 +1,33 @@
+# Constructed from biom file
+OTU.ID	A1	A2	B1	B2	C1	C2	D1	D2	E1	E2	F1	F2	taxonomy
+4376890	3.0	20.0	10.0	22.0	37.0	1.0	5.0	23.0	15.0	20.0	12.0	6.0	k__Bacteria; p__Proteobacteria; c__Betaproteobacteria; o__Rhodocyclales; f__Rhodocyclaceae; g__Methyloversatilis; s__
+1131498	4.0	3.0	92.0	0.0	5.0	20.0	7.0	7.0	15.0	6.0	9.0	1.0	k__Bacteria; p__Proteobacteria; c__Deltaproteobacteria; o__Myxococcales; f__; g__; s__
+577116	6.0	22.0	14.0	67.0	7.0	1.0	57.0	5.0	10.0	45.0	6.0	4.0	k__Bacteria; p__GN04; c__GN15; o__; f__; g__; s__
+808352	596.0	18.0	10.0	26.0	329.0	22.0	18.0	15.0	14.0	13.0	18.0	18.0	k__Bacteria; p__Proteobacteria; c__Alphaproteobacteria; o__Rhodospirillales; f__Rhodospirillaceae
+4443285	14.0	19.0	8.0	5.0	15.0	3.0	18.0	21.0	16.0	14.0	6.0	10.0	k__Bacteria; p__SBR1093; c__VHS-B5-50; o__; f__; g__; s__
+254138	26.0	65.0	16.0	13.0	18.0	2.0	18.0	14.0	32.0	13.0	4.0	3.0	k__Bacteria; p__Proteobacteria; c__Betaproteobacteria; o__Burkholderiales; f__Comamonadaceae
+583206	40.0	66.0	59.0	13.0	91.0	11.0	112.0	25.0	88.0	90.0	33.0	54.0	k__Bacteria; p__Chloroflexi; c__TK17; o__mle1-48; f__; g__; s__
+814055	6.0	11.0	3.0	3.0	22.0	3.0	4.0	5.0	5.0	8.0	9.0	10.0	k__Bacteria; p__Proteobacteria; c__Alphaproteobacteria; o__Rhizobiales; f__; g__; s__
+833957	7.0	7.0	20.0	2.0	8.0	13.0	3.0	1.0	2.0	2.0	3.0	1.0	k__Bacteria; p__Chloroflexi; c__Ellin6529; o__; f__; g__; s__
+1107025	480.0	520.0	208.0	181.0	436.0	147.0	440.0	635.0	424.0	596.0	343.0	322.0	k__Bacteria; p__Proteobacteria; c__Gammaproteobacteria; o__Chromatiales; f__; g__; s__
+4357886	95.0	70.0	10.0	7.0	193.0	8.0	37.0	35.0	68.0	40.0	27.0	6.0	k__Bacteria; p__Proteobacteria; c__Alphaproteobacteria; o__Rhizobiales; f__Methylocystaceae; g__Methylosinus; s__
+228873	245.0	147.0	369.0	19.0	66.0	17.0	24.0	25.0	62.0	159.0	341.0	25.0	k__Bacteria; p__Chloroflexi; c__Anaerolineae; o__S0208; f__; g__; s__
+New.ReferenceOTU77	6.0	7.0	1.0	1.0	6.0	0.0	5.0	3.0	10.0	2.0	1.0	6.0	k__Bacteria; p__Proteobacteria; c__Betaproteobacteria
+New.ReferenceOTU118	12.0	12.0	4.0	4.0	17.0	4.0	35.0	24.0	19.0	19.0	6.0	8.0	k__Bacteria; p__Proteobacteria; c__Betaproteobacteria; o__Rhodocyclales; f__Rhodocyclaceae
+New.ReferenceOTU119	7.0	5.0	7.0	8.0	7.0	7.0	14.0	26.0	24.0	31.0	5.0	7.0	k__Bacteria; p__Proteobacteria
+New.ReferenceOTU110	5.0	1.0	2.0	1.0	1.0	2.0	4.0	3.0	4.0	6.0	1.0	2.0	k__Bacteria; p__Proteobacteria; c__Betaproteobacteria
+New.ReferenceOTU111	7.0	10.0	8.0	7.0	13.0	5.0	23.0	11.0	5.0	11.0	6.0	4.0	k__Bacteria; p__Chlorobi; c__Ignavibacteria; o__Ignavibacteriales; f__Ignavibacteriaceae; g__Ignavibacterium; s__
+New.ReferenceOTU2	30.0	37.0	24.0	20.0	48.0	5.0	96.0	41.0	59.0	47.0	29.0	21.0	k__Bacteria; p__Chloroflexi; c__TK17; o__mle1-48; f__; g__; s__
+New.ReferenceOTU3	28.0	19.0	75.0	82.0	45.0	88.0	18.0	19.0	16.0	18.0	28.0	865.0	k__Bacteria; p__Acidobacteria; c__iii1-8; o__SJA-36; f__; g__; s__
+New.ReferenceOTU4	11.0	3.0	67.0	98.0	40.0	140.0	31.0	7.0	7.0	7.0	95.0	128.0	k__Bacteria; p__Proteobacteria; c__Gammaproteobacteria; o__Methylococcales; f__Methylococcaceae; g__Methylomonas; s__
+New.ReferenceOTU133	166.0	134.0	85.0	55.0	151.0	39.0	158.0	197.0	144.0	184.0	148.0	103.0	k__Bacteria; p__Proteobacteria; c__Gammaproteobacteria; o__Chromatiales; f__; g__; s__
+New.ReferenceOTU130	82.0	112.0	20.0	16.0	114.0	31.0	120.0	119.0	138.0	111.0	39.0	42.0	k__Bacteria; p__Proteobacteria; c__Alphaproteobacteria
+New.ReferenceOTU91	4.0	2.0	3.0	3.0	5.0	3.0	0.0	2.0	1.0	3.0	1.0	2.0	k__Bacteria; p__Proteobacteria; c__Alphaproteobacteria; o__Rhodobacterales; f__Rhodobacteraceae
+New.ReferenceOTU97	2.0	6.0	0.0	4.0	7.0	2.0	1.0	7.0	5.0	3.0	1.0	6.0	k__Bacteria; p__Chloroflexi; c__Anaerolineae; o__SBR1031; f__A4b; g__; s__
+New.ReferenceOTU95	6.0	27.0	8.0	55.0	56.0	4.0	14.0	68.0	24.0	69.0	27.0	39.0	k__Bacteria; p__Proteobacteria; c__Betaproteobacteria; o__Rhodocyclales; f__Rhodocyclaceae
+New.ReferenceOTU138	1.0	2.0	0.0	0.0	1.0	0.0	1.0	2.0	20.0	0.0	0.0	0.0	k__Bacteria; p__Chloroflexi; c__Anaerolineae; o__H39; f__; g__; s__
+New.ReferenceOTU139	5.0	7.0	53.0	92.0	46.0	121.0	18.0	10.0	7.0	7.0	68.0	100.0	k__Bacteria; p__Proteobacteria; c__Gammaproteobacteria; o__Methylococcales; f__Methylococcaceae; g__Methylomonas; s__
+New.ReferenceOTU92	34.0	64.0	8.0	29.0	97.0	18.0	43.0	44.0	43.0	56.0	82.0	27.0	k__Bacteria; p__Proteobacteria; c__Gammaproteobacteria; o__Thiotrichales; f__Piscirickettsiaceae; g__; s__
+New.ReferenceOTU45	10.0	33.0	0.0	1.0	1.0	3.0	3.0	9.0	31.0	5.0	0.0	0.0	k__Bacteria; p__Chloroflexi; c__Anaerolineae; o__SBR1031; f__SJA-101; g__; s__
+New.ReferenceOTU47	4.0	10.0	3.0	2.0	7.0	4.0	12.0	3.0	11.0	17.0	4.0	3.0	k__Bacteria; p__Chloroflexi; c__Anaerolineae; o__SBR1031; f__oc28; g__; s__
+New.ReferenceOTU81	175.0	98.0	9.0	15.0	213.0	25.0	84.0	103.0	170.0	173.0	60.0	20.0	k__Bacteria; p__Proteobacteria; c__Alphaproteobacteria; o__Rhizobiales
