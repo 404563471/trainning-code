@@ -43,4 +43,10 @@ for i in range(5, 0, -1):
     print(myorder)
     myorder.add(i)
 
+for i in range(5):
+    print(myorder)
+    myorder.add(i)
+
 print(myorder)
+
+print(myorder.search(5))
