@@ -312,3 +312,102 @@ DF %>% group_by(z) %>% filter(any(x > 5L)) %>% summarise(y[1L] - y[2L])
 ```
 
 
+***
+## **data.table**
+```{r}
+R.version
+```
+***
+    DT[ i,  j,  by ] # + extra arguments
+        |   |   |
+        |   |    -------> grouped by what?
+        |    -------> what to do?
+         ---> on which rows?
+***
+1.create a data.table for test
+```{r}
+library(data.table)
+DT <- data.table(x=rep(c("b","a","c"), each=3), y=c(1,3,6), v=1:9)
+DT
+```
+
+***
+2. use i to select rows        
+```{r, collapse=TRUE}
+DT[!2:4] # all rows other than 2:4
+DT[order(x)] 
+```
+
+3.1 use j to select column, nose the class of return
+```{r, collapse=TRUE}
+DT[, y] # return a vector
+DT[, 2] # return a data.table
+DT[, 2:3] # when you select more than one columns, there always return a data.table
+DT[, !2]
+```
+
+3.2 the little error 
+```{r, error=TRUE}
+colNum <- 2
+DT[, colNum]
+DT[, colNum, with=F] # when select column by vactor, must with = F !!!
+```
+
+3.3 list() equal to .(), and always return data.table
+```{r}
+DT[, list(v)] # select v column as a data.table
+DT[, .(v)] # same as above, and .() is shorthand alias to list()
+DT[,sum(v)] # sum of v column and return as vector
+DT[, .(sum(v))] # sum of v column and return as data.table 
+DT[, list(sum(v))] # same as above 
+DT[, .(sum = sum(v))] # same as above and name"sum"
+DT[, .(v, v*2)] # return two column data.table
+```
+
+3.4 test which way the fastest to select a column value
+```{r}
+Dt <- data.table(x = rep_len(LETTERS, 10^7), y=1:10)
+system.time(DT[, v]) # select v column as a vector
+system.time(DT[["v"]]) # same as above, but much faster. So I think data table look like list in this way.
+
+Dt <- as.data.frame(Dt)
+system.time(Dt[, "x"]) # I don't know why it is same fast as above......., may be a bug
+```
+
+3.5 The special symbols
+***
+3.5.1 .SD means the Subset of x's Data, represents the selected cols of .SDcols 
+```{r}
+DT[, .SD] # if not give the by or .SDcols, .SD means the total data.table!
+colNum <- 2:3
+DT[, .SD, .SDcols = colNum] # select the 2,3 columns
+DT[, .SD[, 2:3]]# same as above, but if different with DT[, .SD[, c(x, y)]], so don't use the .SD to select data
+DT[, c(2:3) := lapply(.SD, as.character), .SDcols = colNum] # change the class of subset of data.
+```
+3.5.2 use .SDcols and by to select the special column and group rows
+```{r}
+DT[, .SD[1]] # select the 1 row
+DT[, .SD[1], by = x] # select the first row by group of x
+DT[, .SD[1], .SDcols = 2:3, by = x] # always show the x colnum, but that is not a bug !!!
+DT[, .SD[1], .SDcols = 1:2, by = x] # if select by = , it must return that column !!!
+DT[, apply(.SD[1], 1, sum), .SDcols = 2:3, by = x] # grouped by x and chose the first row to sum
+DT[, lapply(.SD, sum), .SDcols = 2:3, by = x] # grouped by x and sum each group of 2:3 colnums 
+```
+3.5.3 .N containing the number of rows in the group
+```{r}
+DT[.N] # .N means the total number of DT rows, so return the last row.
+DT[, .N] # return the total rows, .N just like a function 
+DT[, .N, by = x] # return numbers row in each group
+#DT[, .N, by = rleid(x)] # just change column ID
+#rleid(DT$x) # change ID to numbers
+```
+3.5.4 the others
+```{r}
+#DT[, .I] # .I just mean number of rows
+#DT[, .I, by = x]
+#DT[, .I[1], by = x]
+#DT[, .I[which.max(y)], by = x] # the numbers of the max value of y in grouping x
+#DT[, .GRP, by=x] # just group counter, 1st, 2nd, etc
+#DT[.BY, y, on="x"]
+```
+
