@@ -10,7 +10,7 @@ def search(sequence, target):
     tar_num=len(target)
     seq_list=[]
     for i in range(seq_num):
-        if target == sequence[i, i+tar_num]:
+        if target == sequence[i:i+tar_num]:
             seq_list.append(i) 
     return seq_list
 
@@ -35,7 +35,7 @@ def tar_str(n=4):
     target_list=["A", "T", "C", "G"]
     ignore_list=[i * j for i in target_list for j in range(2, n+1)]
     for i in range(2, n+1) :
-        for j in itertools.combinations_with_replacement("ATCG",i) :
+        for j in set(list(itertools.permutations("ATCG",i)) + list(itertools.combinations_with_replacement("ATCG", i))) :
             target = "".join(j)
             if target not in ignore_list :
                 target_list.append(target)
