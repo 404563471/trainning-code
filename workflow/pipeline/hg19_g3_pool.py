@@ -44,7 +44,7 @@ for sample in os.listdir(allSamplePath):
     pool.close()
     pool.join()
 
-    alignedfiles=os.listdir(alignedPath)
+    alignedfiles=[ bam for bam in os.listdir(alignedPath) if os.path.splitext(bam)[1] == "bam" ]
 
     pool=ThreadPool()
     pool.map(svdiscover, alignedfiles)
