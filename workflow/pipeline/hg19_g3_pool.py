@@ -25,7 +25,7 @@ def svdiscover(file):
 
 
 allSamplePath = "./data/human/rawdata/"
-ref_path="./data/human/ref/hg19_centromere.fa"
+ref_path="./data/human/ref/hg19_fix.fa"
 resultPath="./results"
 
 for sample in os.listdir(allSamplePath):
