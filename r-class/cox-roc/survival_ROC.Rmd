@@ -1,0 +1,113 @@
+---
+title: "survival_ROC"
+author: "mason-YHY"
+date: "8/26/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+利用survival包进行生存分析
+------------------------------
+主要的函数功能罗列如下：
+
+- Surv：用于创建生存数据对象
+- survfit：创建KM生存曲线或是Cox调整生存曲线
+- survdiff：用于不同组的统计检验
+- coxph：构建COX回归模型
+- cox.zph：检验PH假设是否成立
+- survreg：构建参数模型
+
+### 1. KM生存曲线
+
+#### 1.1 KM曲线简单绘制
+The status indicator, normally 1/2 (1=dead); TRUE/FALSE (TRUE = death); 1/2 (2=death).
+```{r}
+library(survival)
+clinical <- read.table("KM_plot.txt")
+
+#建立生存对象
+y <- Surv(clinical$OS, clinical$vital_status)
+kmfit1 <- survfit(y~1)
+summary(kmfit1)
+plot(kmfit1)
+```
+
+#### 1.2 分组KM曲线绘制
+```{r}
+# 根据基因表达值高低分组
+kmfit_group <- survfit(y ~ Group, data = clinical)                        
+plot(kmfit_group)
+# 两组生存率检验显著性,rho=0为log-rank法或Mantel Haenszel法，rho=1为Wilcoxon法
+survival_test <- survdiff(Surv(OS, vital_status) ~ Group, data=clinical, rho = 0)       
+survival_pvaule <- pchisq(survival_test$chisq, length(survival_test$n)-1, lower.tail = FALSE)
+
+plot(kmfit_group)
+text(3500, 0.7, paste0("p vaule=", round(survival_pvaule, 3)))
+```
+
+
+#### 1.3 KM曲线设置线条参数
+```{r}
+kmfit_group$strata
+plot(kmfit_group, lty = c('solid', 'dashed'), col=c('black','blue'), 
+            xlab='survival time in days', ylab='survival probabilities') 
+legend('topright', c('group1','group2'), lty=c('solid','dashed'), col=c('black','blue'))   
+text(3500, 0.7, paste0("p vaule=", round(survival_pvaule, 3)))
+```
+
+
+
+### 2. cox模型构建
+
+#### 2.1 单变量cox绘制生存曲线
+```{r}
+uni_cox_model <- coxph(y ~ Group, data = clinical)
+cox.zph(uni_cox_model)
+summary(uni_cox_model)
+plot(survfit(uni_cox_model))
+```
+
+#### 2.2 多变量cox绘制生存曲线
+```{r}
+multi_cox_model <- coxph(y ~ Group+stage+age, data = clinical)
+cox.zph(multi_cox_model)
+summary(multi_cox_model)
+plot(survfit(multi_cox_model))
+```
+
+#### 2.3 cox风险值计算
+```{r}
+risk_score <- predict(multi_cox_model)
+clinical$risk_score <- risk_score
+clinical$risk <- ifelse(risk_score<=median(risk_score), "low_risk", "high_risk")
+kmfit_risk <- survfit(y ~ risk, data = clinical)
+
+survival_test <- survdiff(y ~ risk, data=clinical)       # 进行两组生存率比检验
+survival_pvaule <- pchisq(survival_test$chisq, length(survival_test$n)-1, lower.tail = FALSE)
+
+kmfit_risk$strata
+plot(kmfit_risk, lty = c('solid', 'dashed'), col=c('black','blue'),   # 绘制K-M生存曲线,设置线条参数
+     xlab='survival time in days', ylab='survival probabilities') 
+legend('topright', c('high_risk','low_risk'), lty=c('solid','dashed'), col=c('black','blue'))   
+text(3500, 0.7, paste0("p vaule=", round(survival_pvaule, 3)))
+```
+
+#### 2.4 cox矫正后的单因素生存曲线
+```{r}
+newdata <- data.frame(Group=c(1,2), age=rep(mean(clinical$age),2), stage=rep(1,2))
+newdata
+kmfit_cox_group <- survfit(multi_cox_model, newdata = newdata)
+plot(kmfit_cox_group)
+```
+
+### 3. ROC曲线
+```{r}
+library(pROC)
+clinical$OS_group <- ifelse(clinical$OS<=median(clinical$OS), "poor", "good")
+roc.model <- roc(OS_group ~ risk_score, data = clinical)
+roc.model
+plot(roc.model)
+```

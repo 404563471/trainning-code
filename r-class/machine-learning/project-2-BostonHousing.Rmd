@@ -1,0 +1,86 @@
+---
+title: "machine learning project 2"
+author: "mason-YHY"
+date: "2020/4/4"
+output: html_document
+---
+
+### 波士顿房价数据---回归预测
+
+1. 读入数据并进行预处理
+```{r}
+# load packages
+library(mlbench)
+library(caret)
+library(doParallel)
+source("./caret_function.R")
+# attach the BostonHousing dataset
+data(BostonHousing)
+# Split out validation dataset
+# create a list of 80% of the rows in the original dataset we can use for training
+set.seed(7)
+validationIndex <- createDataPartition(BostonHousing$medv, p=0.80, list=FALSE)
+# select 20% of the data for validation
+validation <- BostonHousing[-validationIndex,]
+# use the remaining 80% of data to training and testing the models
+dataset <- BostonHousing[validationIndex,]
+
+preProcValues <- preProcess(dataset, method = c("center", "scale"))
+train_dataset <- predict(preProcValues, dataset)
+# 利用训练集的均值和方差对测试集进行标准化
+test_dataset <- predict(preProcValues, validation)
+```
+
+2. 利用写好的函数，批量产生5种算法模型训练结果
+```{r}
+# Run algorithms using 10-fold cross validation
+trainControl <- trainControl(method="repeatedcv", number=10, repeats=3)
+
+select_m <- c("lm", "glm", "svmRadial", "rpart", "knn")
+train_result <- parallel_train(selected_m = select_m, train_data = train_dataset, predict_var = "medv", trainControl = trainControl, metric = "RMSE")
+train_result_summary <- resamples(train_result)
+summary(train_result_summary)
+dotplot(train_result_summary)
+```
+
+3. 特征选择
+```{r}
+set.seed(7)
+indepented_var <- subset(train_dataset, select = - medv)
+indepented_var <- as.data.frame(lapply(indepented_var, as.numeric))
+correlations <- cor(indepented_var)
+highlyCorrelated <- findCorrelation(correlations, cutoff = 0.7)
+print(names(train_dataset)[highlyCorrelated])
+train_dataset_feature <- train_dataset[, -highlyCorrelated]
+```
+
+4. 对特征选择后的变量重新建模
+```{r}
+train_result_feature <- parallel_train(selected_m = select_m, train_data = train_dataset_feature, predict_var = "medv", trainControl = trainControl, metric = "RMSE")
+train_result_feature_summary <- resamples(train_result_feature)
+summary(train_result_feature_summary)
+dotplot(train_result_feature_summary)
+```
+
+5. 对效果最好的SVM进行调参，优化模型
+```{r}
+trainControl <- trainControl(method="repeatedcv", number=10, repeats=3)
+metric <- "RMSE"
+set.seed(7)
+grid <- expand.grid(.sigma=c(0.025, 0.05, 0.1, 0.15), .C=seq(1, 10, by=1))
+fit.svm <- train(medv~., data=dataset, method="svmRadial", metric=metric, tuneGrid=grid,
+preProc=c("BoxCox"), trControl=trainControl)
+print(fit.svm)
+plot(fit.svm)
+```
+
+6. 对调参后最优模型对验证集进行预测
+```{r}
+importance <- varImp(fit.svm, scale = F)
+plot(importance)
+final_model <- fit.svm$finalModel
+predictions <- predict(fit.svm, validation)
+RMSE(predictions, validation$medv)
+R2(predictions, validation$medv)
+```
+
