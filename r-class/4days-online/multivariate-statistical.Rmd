@@ -9,56 +9,154 @@ Generalized Linear Models
 =====================================================
 ```{r}
 library(MASS)
-data(anorexia)
-
-anorex.1 <- glm(Postwt ~ Prewt + Treat + offset(Prewt),
-                family = gaussian, data = anorexia)
-summary(anorex.1)
-opar <- par(mfrow=c(2,2))
-plot(anorex.1)
-par(opar)
+library(mlbench)
+data(PimaIndiansDiabetes)
+head(PimaIndiansDiabetes)
+diabetes <- as.data.frame(scale(PimaIndiansDiabetes[1:8]))
+diabetes.lmfit <- glm(glucose~., family=gaussian, data=diabetes)
+summary(diabetes.lmfit)
+step.lmfit <- step(diabetes.lmfit)
+summary(step.lmfit)
 ```
 
 logistic---0,1 分类
 ======================================================
-频数资料,Logistic 回归	
-
+Example 1
 ```{r}
-#单因素
-Treatment <- factor(Arthritis$Treatment, levels = c("Placebo", "Treated"), labels = c(0, 1))
-Improved <- factor(Arthritis$Improved, levels = c( "None", "Some", "Marked"), labels = c(0, 1, 2))
-xtabs(~ Treatment + Improved)
-fit <- glm(Treatment~Improved, family=binomial(link='logit'), subset = Improved!=1)
-fit
-summary(fit)
+library(DAAG)
+data("anesthetic")
+head(anesthetic)
+cdplot(factor(nomove)~conc,data=anesthetic,main='条件密度图',ylab='病人移动',xlab='麻醉剂量')
 
+anes1 <- glm(nomove~conc,data=anesthetic,family=binomial(link='logit'))
 
-#筛选子集
-fit <- glm(Treatment~Improved, family=binomial(link='logit'), subset = Improved!=1)
-fit
-summary(fit)
+summary(anes1)
+
+anestot <- aggregate(anesthetic[,c('move','nomove')],by=list(conc=anesthetic$conc),FUN=sum)
+anestot$conc <- as.numeric(as.character(anestot$conc))
+anestot$total <- apply(anestot[,c('move','nomove')],1,sum)
+anestot$prop <- anestot$nomove/anestot$total
+anestot
+
+anes2 <- glm(cbind(nomove,move)~conc,data=anestot,family=binomial(link='logit'))
+#anes2=glm(cbind(move,nomove)~conc,family=binomial(link='logit'),data=anestot)
+summary(anes2)
+anes3 <- glm(prop~conc,data=anestot,family=binomial(link='logit'),weights=total)
+summary(anes3)
+
+x <- seq(from=0,to=3,length.out=30)
+y <- predict(anes1,data.frame(conc=x),type='response')
+plot(prop~conc,pch=16,col='red',data=anestot,xlim=c(0.5,3),main='Logistic回归曲线图',ylab='病人静止概率',xlab='麻醉剂量')
+lines(y~x,lty=2,col='blue')
+```
+Example 2
+
+- OR = 1: No effect
+- OR < 1: Reduction in the hazard
+- OR > 1: Increase in Hazard
+```{r}
+cancerdata <- data.frame(smoke=factor(rep(c(0,1),c(199+170,101+416))),
+                         drink=factor(rep(c(0,1,0,1),c(199,170,101,416))),
+                         Y=factor(rep(c(0,1,0,1,0,1,0,1),c(136,63,107,63,57,44,151,265))))
+
+cancerdata.fit <- glm(Y~., data = cancerdata, family = binomial(link = 'logit'))
+summary(cancerdata.fit)
+# OR
+exp(coef(cancerdata.fit))
+exp(confint(cancerdata.fit))
 ```
 
-多变量的Logistic 回归
+1. 模型构建
 ```{r}
-Sex <- factor(Arthritis$Sex, levels = c("Female", "Male"), labels = c(0, 1))
-fit <- glm(Treatment~Sex + Improved, family=binomial(link='logit'), subset = Improved!=1)
-fit
-summary(fit)
+diabetes$diabetes <- factor(PimaIndiansDiabetes$diabetes, levels = c("neg", "pos"), labels = c(0, 1))
+head(diabetes)
+
+diabetes.logitfit <- glm(diabetes~. , data = diabetes,family=binomial(link='logit'))
+summary(diabetes.logitfit)
+step.logitfit <- step(diabetes.logitfit)
+summary(step.logitfit)
 ```
+2. 预测分类
+```{r}
+diabetesValue <- data.frame(diabetes=diabetes$diabetes, values=step.logitfit$fitted.values)
+hist(subset(diabetesValue, diabetes==0)$values, breaks = 20, col = rgb(0,0,1,0.5), main = "Look for Cutoff", xlab = "neg and pos")
+hist(subset(diabetesValue, diabetes==1)$values, breaks = 20, col = rgb(1,0,0,0.5), add=TRUE)
+diabetesValue$predict <- ifelse(diabetesValue$values>=0.5, 1, 0)
 
-
-ROC 曲线评价模型
+predictTable <- table(diabetesValue[, c("diabetes", "predict")])
+predictTable
+prop.table(predictTable)
+```
+3. ROC 曲线评价模型
 ```{r}
 library(pROC)
-pre <- predict(fit)
-real <- Treatment[Improved!=1]
-modelroc <- roc(response=real, predictor = pre)
-plot(modelroc,xlim=c(1, 0), ylim=c(0, 1),print.auc=TRUE,auc.polygon=TRUE,grid=c(0.1,0.2),grid.col=c("green","red"),max.auc.polygon=TRUE,auc.polygon.col="blue",print.thres=TRUE)
+modelroc <- roc(diabetes~values, data = diabetesValue)
+par(pty = "s")
+plot(modelroc, legacy.axes=TRUE, print.auc=TRUE, print.thres=TRUE, auc.polygon=TRUE)
+```
+4. Conditional logistic regression
+```{r}
+library(survival)
+data(infert)
+infert.fit1 <- clogit(case ~ factor(spontaneous)+factor(induced)+strata(stratum), data = infert)
+summary(infert.fit1)
+infert.fit2 <- glm(case ~ factor(spontaneous)+factor(induced), data = infert, family = binomial(link='logit'))
+#summary(infert.fit2)
+```
+5. ROC 曲线compare
+```{r}
+fit1.roc <- roc(infert$case, predict(infert.fit1))
+fit2.roc <- roc(infert$case, predict(infert.fit2))
+roc.test(fit1.roc, fit2.roc)
+
+par(pty = "s")
+plot(fit1.roc, legacy.axes=TRUE, col="red")
+plot(fit2.roc, legacy.axes=TRUE, col="blue", add=TRUE)
 ```
 
 
+lDA线性判别
+=========================================================
+```{r}
+library(MASS)
+ld <- lda(Species~. , data = iris)
+ld
+plot(ld)
 
+rawG <- iris$Species
+ldPre <- predict(ld)
+ldG <- ldPre$class
+tab1 <- table(rawG, ldG)
+tab1
+sum(diag(prop.table(tab1)))
+
+plot(ldPre$x, col=iris$Species)
+points(ldPre$x[!(ldPre$class==iris$Species),], pch=8)
+```
+
+QDA二次判别
+========================================================
+```{r}
+qd <- qda(Species~. , data = iris)
+qd
+qdPre <- predict(qd)
+qdG <- qdPre$class
+tab2 <- table(rawG, qdG)
+tab2
+sum(diag(prop.table(tab2)))
+```
+
+Bayes先验概率
+=======================================================
+```{r}
+bayes <- lda(Species~. , data = iris, prior=c(1,2,3)/6)
+bayes
+bayesPre <- predict(bayes)
+ldG2 <- bayesPre$class
+tab3 <- table(rawG, ldG2)
+tab3
+sum(diag(prop.table(tab3)))
+```
 
 Cox proportional hazards model---连续伴有删失
 ========================================================
@@ -67,6 +165,7 @@ Cox proportional hazards model---连续伴有删失
 - HR < 1: Reduction in the hazard
 - HR > 1: Increase in Hazard
 
+1. 单因素cox
 ```{r}
 library("survival")
 library("survminer")
@@ -78,41 +177,13 @@ res.cox
 summary(res.cox)
 ```
 
-批量单因素cox回归
-```{r}
-covariates <- c("age", "sex", "ph.karno", "ph.ecog", "wt.loss")
-univ_formulas <- sapply(covariates,
-function(x) as.formula(paste('Surv(time, status)~', x)))
-univ_models <- lapply( univ_formulas, function(x){coxph(x, data = lung)})
-# Extract data
-univ_results <- lapply(univ_models,
-function(x){
-x <- summary(x)
-p.value<-signif(x$wald["pvalue"], digits=2)
-wald.test<-signif(x$wald["test"], digits=2)
-beta<-signif(x$coef[1], digits=2);#coeficient beta
-HR <-signif(x$coef[2], digits=2);#exp(beta)
-HR.confint.lower <- signif(x$conf.int[,"lower .95"], 2)
-HR.confint.upper <- signif(x$conf.int[,"upper .95"],2)
-HR <- paste0(HR, " (",
-HR.confint.lower, "-", HR.confint.upper, ")")
-res<-c(beta, HR, wald.test, p.value)
-names(res)<-c("beta", "HR (95% CI for HR)", "wald.test",
-"p.value")
-return(res)
-#return(exp(cbind(coef(x),confint(x))))
-})
-res <- t(as.data.frame(univ_results, check.names = FALSE))
-as.data.frame(res)
-```
-
-多因素cox
+2. 多因素cox
 ```{r}
 res.cox <- coxph(Surv(time, status) ~ age + sex + ph.ecog, data = lung)
 summary(res.cox)
 ```
 
-Flexible parametric regression
+3. Flexible parametric regression
 ```{r}
 library(flexsurv)
 
@@ -171,6 +242,7 @@ for (hcMethod in Methods) {
 快速聚类--kmeans
 ==========================================================
 ```{r}
+set.seed(100)
 x <- rbind(matrix(rnorm(100, sd = 0.3), ncol = 2),
            matrix(rnorm(100, mean = 1, sd = 0.3), ncol = 2))
 
@@ -181,58 +253,29 @@ plot(x, col = cl$cluster)
 points(cl$centers, col = 1:2, pch = 8, cex = 2)
 ```
 
-聚类分析--kmeans分析
-==========================================================
+kmeans分析iris
 ```{r}
-iris2<-iris[, 1:4]
-iris.kmeans<-kmeans(iris2, 3)
+set.seed(100)
+iris3<-iris[, 1:4] + rchisq(150, 2)
+iris.kmeans<-kmeans(iris3, 3)
 iris.kmeans
 
-par(mfrow = c(1, 2))
+origin_group <- as.character(factor(iris$Species, labels = c("black", "red", "green")))
+plot(iris3, col=origin_group)
 
-plot(iris2$Sepal.Length,iris2$Sepal.Width, col=iris.kmeans$cluster, pch="*")
-points(iris.kmeans$centers, pch="X", cex=1.5, col=4)
-
-plot(iris2$Sepal.Length, iris2$Sepal.Width,col=iris$Species, pch="*")
+plot(iris3, col=iris.kmeans$cluster)
 ```
 
 K-mediods算法
 =================================================
-a. 首先随机选取一组聚类样本作为中心点集
-b. 每个中心点对应一个簇
-c. 计算各样本点到各个中心点的距离（如欧几里德距离），将样本点放入距离中心点最短的那个簇中
-d. 计算各簇中，距簇内各样本点距离的绝度误差最小的点，作为新的中心点
-e. 如果新的中心点集与原中心点集相同，算法终止；如果新的中心点集与原中心点集不完全相同，返回b
 ```{r}
 library(cluster)
+iris.pam <- pam(iris3, 3)
+pam_group <- iris.pam$clustering
+#pam_group <- c(2, 3, 1)[pam_group]
+plot(iris3, col=pam_group)
 
-iris2.pam <- pam(iris2, 3)
-iris2.pam
-
-layout(matrix(c(1,2),1,2)) #每页显示两个图
-plot(iris2.pam)
-layout(matrix(1))
-```
-
-### 针对大型数据集
-```{r}
-iris2.clara <- clara(iris2,3)
-iris2.clara
-
-layout(matrix(c(1,2),1,2)) #每页显示两个图
-plot(iris2.clara)
-layout(matrix(1))
-```
-
-### fpc包对K-mediods方法的集成
-```{r}
-library(fpc)
-iris2.pamk<-pamk(iris2)
-table(iris2.pamk$pamobject$clustering,iris$Species)
-
-layout(matrix(c(1,2),1,2)) #每页显示两个图
-plot(iris2.pamk$pamobject)
-layout(matrix(1))
+iris.pam
 ```
 
 
@@ -258,9 +301,22 @@ r-邻域：给定点半径为r的区域。
 （3）算法聚类效果依赖与距离公式选取，实际应用中常用欧式距离，对于高维数据，存在“维数灾难”。
 ```{r}
 library(fpc)
-ds <- dbscan(iris2,eps=0.42,MinPts = 5)
-table(ds$cluster, iris$Species)
-plot(ds, iris2)
+iris.dbscan <- dbscan(iris3, 0.4, MinPts = 2, scale = TRUE)
+plot(iris.dbscan, iris3)
+
+library(mlbench)
+spirals_data <- mlbench.spirals(1000, 3)
+plot(spirals_data)
+
+cluster_data <- spirals_data$x
+k_cluster <- kmeans(cluster_data, 2)
+plot(cluster_data, col=k_cluster$cluster)
+points(k_cluster$cluster, pch = 8, cex=1.5, col="green")
+
+#for (i in seq(0.1, 1, 0.1)) {
+dbscan_cluster <- dbscan(cluster_data, 0.1, MinPts = 2)
+plot(dbscan_cluster, cluster_data)
+#}
 ```
 
 
@@ -272,102 +328,58 @@ pcaX <- princomp(iris2, cor=FALSE)
 pcaX
 summary(pcaX)
 screeplot(pcaX, type='lines')
+pcaX$loadings
 
 plot(pcaX$scores[,1:2], type = 'n', asp = 1)
 text(pcaX$scores[,1:2], labels = iris$Species, cex = 0.6)
 ```
 
-### EFA-----因子分析
+EFA-----因子分析
+===========================================================
 ```{r}
-fac <- factanal(iris2, factors = 1, rotation = "none")
+v1 <- c(1,1,1,1,1,1,1,1,1,1,3,3,3,3,3,4,5,6)
+v2 <- c(1,2,1,1,1,1,2,1,2,1,3,4,3,3,3,4,6,5)
+v3 <- c(3,3,3,3,3,1,1,1,1,1,1,1,1,1,1,5,4,6)
+v4 <- c(3,3,4,3,3,1,1,2,1,1,1,1,2,1,1,5,6,4)
+v5 <- c(1,1,1,1,1,3,3,3,3,3,1,1,1,1,1,6,4,5)
+v6 <- c(1,1,1,2,1,3,3,3,4,3,1,1,1,2,1,6,5,4)
+m1 <- cbind(v1,v2,v3,v4,v5,v6)
+cor(m1)
+## rotate：旋转方法，默认为变异数最小法；"varimax"正交旋转将人为地强制3个因子不相关，"promax"斜交旋转允许3个因子相关。
+factanal(m1, factors = 3) # varimax is the default
+factanal(m1, factors = 3, rotation = "promax")
+
+pca <- princomp(diabetes[,1:8])
+summary(pca)
+pca$loadings
+
+fac <- factanal(diabetes[,1:8], factors = 4)
 fac
 ```
 
-### 平行分析
-```{r}
-library(psych)
-irisCor <- cor(iris2)
-fa.parallel(irisCor, n.obs = 150, fa = "both", n.iter = 100, main = "parallel analyse plot")
-
-## 提取因子
-## rotate：旋转方法，默认为变异数最小法；"varimax"正交旋转将人为地强制3个因子不相关，"promax"斜交旋转允许3个因子相关。
-#fm：设定因子化方法，包含最大似然法(ml)，主轴迭代法(pa)，加权最小二乘法(wls)，广义加权最小二乘法(gls)以及默认的极小残差法(minres)
-
-faN <- fa(irisCor, nfactors = 2, rotate = "none", fm="pa")
-# PA表示成分载荷，即观测变量与因子的相关系数
-# h2表示公因子方差，即因子对每个变量的方法解释度
-# u2表示成分唯一性，即方差无法被因子解释的比例(1-h2)
-faN
-
-factor.plot(faN, labels = rownames(faN$loadings))
-fa.diagram(faN, digits = 3)
-```
-
-lDA线性判别
-=========================================================
-```{r}
-library(MASS)
-ld <- lda(Species~. , data = iris)
-ld
-plot(ld)
-rawG <- iris$Species
-ldG <- predict(ld)$class
-tab1 <- table(rawG, ldG)
-tab1
-sum(diag(prop.table(tab1)))
-
-ldPre <- predict(ld)
-#比较主成分分析结果
-par(mfrow=c(1, 2))
-plot(scale(ldPre$x), col=iris$Species)
-plot(scale(pcaX$scores[,1:2]), asp = 1, col=iris$Species)
-```
-
-QDA二次判别
-========================================================
-```{r}
-qd <- qda(Species~. , data = iris)
-qd
-qdG <- predict(qd)$class
-tab2 <- table(rawG, qdG)
-tab2
-sum(diag(prop.table(tab2)))
-```
-
-Bayes先验概率
-=======================================================
-```{r}
-ld <- lda(Species~. , data = iris, prior=c(1,2,3)/6)
-ld
-ldG2 <- predict(ld)$class
-tab3 <- table(rawG, ldG2)
-tab3
-sum(diag(prop.table(tab3)))
-```
 
 MDS-----Multidimensional Scaling 多维度数据缩放
 ========================================================
-X 的k维主坐标是将X 中心化后n个样本的前k个主成分的值
-
+度量法，经典解，相似性数据是用距离尺度或比率尺度测得的
 ```{r}
-# 度量法，经典解，相似性数据是用距离尺度或比率尺度测得的
+# X 的k维主坐标是将X 中心化后n个样本的前k个主成分的值
 mdsDist <- dist(iris[,1:4])
 mds1 <- cmdscale(mdsDist)
-mds1
+head(mds1)
 plot(mds1[,1], mds1[,2], type = 'n', asp = 1)
 text(mds1[,1], mds1[,2], labels = iris$Species, cex = 0.6)
 ```
 
-
+非度量法， 若模型需要顺序量表水平的相似数据，就称为非度量化模型
 ```{r}
-# 非度量法， 若模型需要顺序量表水平的相似数据，就称为非度量化模型
 library(MASS)
 # 在iris中存在重复值，会导致距离矩阵出现0
 mdsDist <- dist(unique(iris[,1:4]))
 mds2 <- isoMDS(mdsDist)
 
+head(mds2$points)
 #stress (in percent) 为压力值，为k的单调递减函数，通过调节k使stress减小，小于5%为最佳，大于10%为差
-mds2
+mds2$stress
 mds2x <- mds2$points[,1]
 mds2y <- mds2$points[,2]
 
@@ -380,8 +392,8 @@ text(mds2x, mds2y, labels = iris$Species, cex = 0.6)
 ```{r}
 library(ca)
 data("author")
-ca(author)
-plot(ca(author))
+caFit <- ca(author)
+plot(caFit)
 ```
 
 Canonical Correlations---经典相关分析
